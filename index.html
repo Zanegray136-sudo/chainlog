@@ -1,0 +1,2114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ChainLog</title>
+<meta name="theme-color" content="#0e1014">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e1014;--panel:#161920;--panel2:#1c2029;--line:#262b36;--line2:#323846;
+  --text:#e6e8ee;--muted:#8b93a7;--accent:#33c7b8;--accent-ink:#04201d;
+  --ok:#3ecf8e;--warn:#f5a524;--bad:#ff5d5d;--info:#5aa9ff;--grey:#6b7385;
+  --r:10px;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;-webkit-text-size-adjust:100%}
+a{color:inherit}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+h2{font-size:14px;margin:0 0 12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+p{margin:0}
+.muted{color:var(--muted)}.small{font-size:12px}.mono{font-family:var(--mono);font-size:13px}
+.ic{width:18px;height:18px;flex:none}
+.center{display:grid;place-items:center;min-height:60vh}
+
+/* buttons & inputs */
+.btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);font:inherit;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:#47506a}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)}
+.btn.sm{height:30px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.icon-btn{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:8px;border:0;background:transparent;color:var(--text);cursor:pointer}
+.icon-btn:hover{background:var(--panel2)}
+input,select,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;min-height:38px}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:0;border-color:var(--accent)}
+textarea{min-height:90px;resize:vertical}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.field{margin-bottom:14px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.fgrid .full{grid-column:1/-1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* layout */
+.demo-bar{background:#2a2110;color:#f7cf86;font-size:12px;padding:7px 16px;text-align:center;border-bottom:1px solid #3d3016}
+.layout{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:16px 12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-.01em;padding:4px 8px 18px}
+.brand .logo{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink)}
+.brand .logo .ic{width:17px;height:17px}
+.nav-i{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;text-decoration:none;color:var(--muted);font-weight:500;margin-bottom:2px}
+.nav-i:hover{background:var(--panel2);color:var(--text)}
+.nav-i.on{background:var(--panel2);color:var(--text);box-shadow:inset 3px 0 0 var(--accent)}
+.badge{margin-left:auto;font-style:normal;background:var(--bad);color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+.me{padding:4px 8px 10px}
+.me strong{display:block;font-weight:600}
+.side-foot .nav-i{width:100%;border:0;background:none;font:inherit;cursor:pointer}
+.main{padding:28px 32px 80px;max-width:1240px;width:100%}
+.topbar{display:none}
+.scrim{display:none}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-h p{margin-top:4px}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2>.card{margin-bottom:0}
+.stack>*+*{margin-top:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;text-decoration:none}
+.stat b{display:block;font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.stat.bad b{color:var(--bad)}.stat.warn b{color:var(--warn)}.stat.ok b{color:var(--ok)}
+.alert{border-radius:var(--r);padding:14px 16px;margin-bottom:16px;border:1px solid}
+.alert.bad{background:#2a1416;border-color:#5a2328}
+.alert.warn{background:#2a2110;border-color:#4d3a14}
+.alert-h{display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:8px}
+.alert.bad .alert-h{color:#ff8a8a}.alert.warn .alert-h{color:#f7cf86}
+.alert ul{margin:0;padding:0;list-style:none}
+.alert li{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap}
+.alert li:first-child{border-top:0}
+.alert a{text-decoration:none}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-ok{color:var(--ok);background:rgba(62,207,142,.12)}
+.s-faulty{color:var(--bad);background:rgba(255,93,93,.13)}
+.s-in-repair{color:var(--warn);background:rgba(245,165,36,.13)}
+.s-out-of-service{color:#ff8a5d;background:rgba(255,138,93,.13)}
+.s-retired{color:var(--grey);background:rgba(107,115,133,.15)}
+.s-away{color:var(--info);background:rgba(90,169,255,.13)}
+.chk td{padding:8px 6px}.chk td:last-child{text-align:right;white-space:nowrap}
+.seg{display:inline-flex;gap:4px}.seg label{margin:0;cursor:pointer}.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{display:inline-block;padding:6px 11px;border-radius:7px;border:1px solid var(--line2);font-size:12px;font-weight:600;color:var(--muted);min-width:44px;text-align:center}
+.seg input:checked+.seg-pass{background:rgba(62,207,142,.18);border-color:var(--ok);color:var(--ok)}
+.seg input:checked+.seg-fail{background:rgba(255,93,93,.18);border-color:var(--bad);color:var(--bad)}
+.seg input:checked+.seg-na{background:var(--panel2);border-color:#47506a;color:var(--text)}
+.seg input:focus-visible+span{outline:2px solid var(--accent)}
+.d-overdue{color:var(--bad);background:rgba(255,93,93,.13)}
+.d-soon{color:var(--warn);background:rgba(245,165,36,.13)}
+.d-ok{color:var(--ok);background:rgba(62,207,142,.12)}
+.tag{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent)}
+
+/* tables & lists */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr.click{cursor:pointer}
+.tbl tr.click:hover td{background:var(--panel2)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+.list{list-style:none;margin:0;padding:0}
+.list>li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.list>li:first-child{border-top:0}
+.list a{text-decoration:none}
+.filters{display:grid;grid-template-columns:1fr 160px 170px;gap:10px;margin-bottom:14px}
+.tabs{display:inline-flex;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:3px;gap:2px}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:500;padding:6px 12px;border-radius:6px;cursor:pointer}
+.tabs button.on{background:var(--panel2);color:var(--text)}
+
+/* asset detail */
+.a-head{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.a-head h1 .tag{font-size:22px}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px}
+.kv div span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px}
+.kv div b{font-weight:500}
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:0}
+.log{display:grid;grid-template-columns:14px 1fr auto;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.log:first-child{border-top:0}
+.log-dot{width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--grey)}
+.k-fault .log-dot{background:var(--bad)}.k-repair .log-dot{background:var(--ok)}.k-service .log-dot{background:var(--info)}.k-inspection .log-dot{background:var(--warn)}
+.log-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.kind{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.log p{margin:5px 0 0;white-space:pre-wrap;color:#c9cdd8}
+.meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--panel2);border:1px solid var(--line2);cursor:pointer}
+
+/* scan */
+.reader{width:100%;max-width:420px;margin:0 auto 14px;border-radius:12px;overflow:hidden;background:#000;min-height:0}
+.reader{position:relative}.reader video{display:block;width:100%;height:auto}
+.aim{position:absolute;left:50%;top:50%;width:60%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid var(--accent);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35);pointer-events:none}
+.cam-tools{position:absolute;left:0;right:0;bottom:10px;display:flex;gap:8px;justify-content:center}
+.scan-big{display:grid;place-items:center;gap:14px;text-align:center;padding:26px 10px}
+.scan-ring{width:110px;height:110px;border-radius:24px;border:2px dashed var(--line2);display:grid;place-items:center;color:var(--accent)}
+.scan-ring .ic{width:46px;height:46px}
+.lookup{display:flex;gap:8px;max-width:520px;margin:0 auto}
+.lookup input{font-family:var(--mono)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(5,6,9,.7);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:50;overflow-y:auto}
+.modal.open{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--line2);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 14px 20px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:16px}
+.modal-b{padding:20px}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding-top:6px}
+.note{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--muted);margin-bottom:14px}
+
+/* auth */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.auth-card{width:100%;max-width:380px}
+.auth-card .brand{justify-content:center;font-size:22px;padding-bottom:6px}
+.auth-card .brand .logo{width:36px;height:36px}
+.auth-card .card{padding:22px;margin-top:20px}
+.auth-card .tabs{display:flex;margin-bottom:18px}
+.auth-card .tabs button{flex:1}
+.err{color:var(--bad);font-size:13px;margin-top:10px;min-height:1em}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#232836;border:1px solid var(--line2);padding:10px 16px;border-radius:9px;box-shadow:0 8px 30px rgba(0,0,0,.4);font-weight:500;animation:tin .2s ease}
+.toast.bad{border-color:#5a2328;color:#ff9a9a}.toast.warn{border-color:#4d3a14;color:#f7cf86}
+@keyframes tin{from{opacity:0;transform:translateY(6px)}}
+
+#print{display:none}
+
+@media (max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.cols,.grid2{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:860px){
+  .layout{display:block}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .topbar .brand{padding:0;font-size:15px}
+  .topbar .brand .logo{width:24px;height:24px}
+  .side{position:fixed;left:0;top:0;bottom:0;width:260px;z-index:40;transform:translateX(-100%);transition:transform .2s ease;height:100%}
+  body.nav-open .side{transform:none}
+  body.nav-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30}
+  .main{padding:18px 16px 90px}
+  .filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}
+  .fgrid{grid-template-columns:1fr}
+  .hide-m{display:none}
+  .fab{position:fixed;right:18px;bottom:20px;width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:25}
+  .fab .ic{width:26px;height:26px}
+}
+@media (min-width:861px){.fab{display:none}}
+
+@media print{
+  body{background:#fff;color:#000}
+  #app,#modal,#toast{display:none!important}
+  #print{display:block;font-family:Inter,Arial,sans-serif;font-size:11pt;color:#000}
+  #print h1{font-size:18pt;margin:0 0 4pt}
+  #print h2{color:#000;font-size:11pt;margin:16pt 0 6pt}
+  #print table{width:100%;border-collapse:collapse}
+  #print th,#print td{border-bottom:1px solid #ccc;padding:5pt 6pt;text-align:left;vertical-align:top;font-size:10pt}
+  #print th{background:#f2f2f2}
+  #print .sub{color:#555;margin-bottom:10pt}
+}
+</style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script src="jsqr.js"></script><!-- jsQR, Apache-2.0, github.com/cozmo/jsQR -->
+</head>
+<body>
+<div id="app"><div class="center muted">Loading…</div></div>
+<div id="modal" class="modal"><div class="modal-box"><div class="modal-h"><h3 id="modal-title"></h3><button class="icon-btn" data-act="modal-close" aria-label="Close"></button></div><div class="modal-b" id="modal-body"></div></div></div>
+<div id="toast"></div>
+<div id="print"></div>
+
+<script>
+/* ============================================================
+   ChainLog — chain motor inspections, load tests & maintenance
+   ============================================================ */
+const CFG = Object.assign({ SUPABASE_URL:'', SUPABASE_ANON_KEY:'', APP_NAME:'ChainLog', FAULT_ALERT_DAYS:60, DUE_SOON_DAYS:14, INSPECTION_DAYS:182, LOADTEST_DAYS:365 }, window.CHAINLOG_CONFIG || {});
+const DEMO = !CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY;
+const BUILD = '2026-10-30.1';   // bump together with version.json on every release
+const sb = (!DEMO && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
+
+const BAD = ['Faulty','In repair','Out of service'];
+const STATUSES = ['OK','Faulty','In repair','Out of service','Retired'];
+const CATS = ['Chain motor','Controller','Other'];
+const KINDS = ['Fault','Repair','Service','Inspection','Note'];
+const DAY = 864e5;
+
+/* ---------- helpers ---------- */
+const $ = (s, el=document) => el.querySelector(s);
+const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').trim().toLowerCase();
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+/* formatters are built once and reused (building one per date is slow on phones) */
+const F_DATE = new Intl.DateTimeFormat(undefined, {day:'numeric', month:'short', year:'numeric'});
+const F_DT = new Intl.DateTimeFormat(undefined, {day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit'});
+const F_NUM = new Intl.NumberFormat();
+const F_SORT = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+const fmtDate = d => d ? F_DATE.format(new Date(d)) : '—';
+const fmtDT = d => d ? F_DT.format(new Date(d)) : '—';
+const daysSince = d => Math.floor((Date.now() - new Date(d)) / DAY);
+const slug = s => norm(s).replace(/[^a-z0-9]+/g, '-');
+const pill = st => `<span class="pill s-${slug(st)}">${h(st)}</span>`;
+const isAdmin = () => S.profile?.role === 'admin';
+const assetById = id => S.assets.find(a => a.id === id);
+const nameOf = id => S.profiles.find(p => p.id === id)?.name || 'Unknown';
+const whoOf = l => l.tech_name || nameOf(l.created_by);
+const hasH = v => v != null && v !== '';
+const fmtH = v => hasH(v) ? F_NUM.format(Number(v)) + ' h' : '—';
+const numOrNull = v => (v == null || String(v).trim() === '') ? null : Number(v);
+const byNewest = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+
+const P = {
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/>',
+  box:'<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+  hook:'<path d="M12 2v6"/><circle cx="12" cy="4" r="1.5"/><path d="M12 8a5 5 0 1 0 5 5"/><path d="M17 13l-2-2"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/>',
+  chart:'<path d="M5 20V11M11 20V5M17 20v-6M3 20h18"/>',
+  parts:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M22 20c0-3-2-5.2-5-5.8"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>',
+  print:'<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>', edit:'<path d="M4 20h4L20 8l-4-4L4 16z"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', logout:'<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/>',
+  camera:'<path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/>', check:'<path d="M5 12l5 5 9-10"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', file:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+  truck:'<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+};
+const ic = n => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
+const LOGO = `<span class="logo">${ic('hook')}</span>`;
+$('[data-act="modal-close"]').innerHTML = ic('x');
+
+function toast(msg, kind='') {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg;
+  $('#toast').appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+function errMsg(e) {
+  const m = e?.message || e?.error_description || String(e);
+  if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed|network request failed/i.test(m)) return 'No signal — this wasn\'t saved. Try again when you\'re back online.';
+  return m;
+}
+
+async function compressImage(file, max) {
+  max = max || (DEMO ? 900 : 1600);
+  if (!file.type.startsWith('image/')) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', DEMO ? .7 : .82));
+    return blob || file;
+  } catch { return file; }
+}
+
+/* ============================================================
+   DATA LAYER — Supabase (live) or browser storage (demo)
+   ============================================================ */
+function supabaseApi() {
+  return {
+    async session() { const { data } = await sb.auth.getSession(); return data.session?.user || null; },
+    async signIn(email, password) { const { error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; },
+    async signUp(name, email, password) {
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: location.href.split('#')[0] } });
+      if (error) throw error; return data;
+    },
+    async resetPw(email) { const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] }); if (error) throw error; },
+    async setPw(password) { const { error } = await sb.auth.updateUser({ password }); if (error) throw error; },
+    async signOut() { clearCaches(); await sb.auth.signOut(); },
+    async profile(id) { const { data, error } = await sb.from('profiles').select('*').eq('id', id).maybeSingle(); if (error) throw error; return data; },
+    async all(table) {
+      let out = [], from = 0;
+      for (;;) {
+        const { data, error } = await sb.from(table).select('*').order('created_at', { ascending: false }).range(from, from + 999);
+        if (error) throw error;
+        out = out.concat(data); if (data.length < 1000) break; from += 1000;
+      }
+      return out;
+    },
+    async insert(table, row) { const { data, error } = await sb.from(table).insert(row).select().single(); if (error) throw friendly(error); return data; },
+    async update(table, id, patch) { const { data, error } = await sb.from(table).update(patch).eq('id', id).select().single(); if (error) throw friendly(error); return data; },
+    async remove(table, id) { const { error } = await sb.from(table).delete().eq('id', id); if (error) throw friendly(error); },
+    async upload(bucket, blob, name) {
+      const path = `${new Date().toISOString().slice(0,10)}/${uid().slice(0,8)}-${String(name || 'file').replace(/[^\w.\-]+/g, '_')}`;
+      const { error } = await sb.storage.from(bucket).upload(path, blob, { contentType: blob.type || undefined });
+      if (error) throw error; return path;
+    },
+    async fileUrl(bucket, path) { const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, 3600); if (error) throw error; return data.signedUrl; },
+  };
+  function friendly(e) {
+    if (e.code === '23505') return new Error('An item with that asset tag already exists.');
+    if (e.code === '42501') return new Error("You don't have permission to do that.");
+    if (e.code === '23514' || /Not enough in stock/i.test(e.message || '')) return new Error('Not enough in stock for that.');
+    return e;
+  }
+}
+
+function demoApi() {
+  const KEY = 'chainlog-demo-v1'; let mem = null;
+  const read = () => {
+    if (mem) return mem;
+    try { const r = localStorage.getItem(KEY); if (r) mem = JSON.parse(r); } catch {}
+    if (!mem) { mem = demoSeed(); save(); }
+    if (!mem.parts) { const x = demoParts(mem.assets); mem.parts = x.parts; mem.part_moves = x.part_moves; save(); }
+    return mem;
+  };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch { toast('Demo storage is full — big photos/manuals won\'t survive a reload', 'warn'); } };
+  const clone = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
+  const dupTag = (d, tag, id) => tag && d.assets.some(a => a.id !== id && norm(a.tag) === norm(tag));
+  return {
+    async session() { return { id: 'demo-admin', email: 'demo@example.com' }; },
+    async signIn() {}, async signUp() {}, async resetPw() {}, async setPw() {},
+    async signOut() {
+      if (confirm('This is demo mode. Reset the demo data back to the sample items?')) { try { localStorage.removeItem(KEY); } catch {} mem = null; location.hash = '#/dashboard'; location.reload(); }
+    },
+    async profile(id) { return clone(read().profiles.find(p => p.id === id)); },
+    async all(t) { return clone(read()[t] || []).sort(byNewest); },
+    async insert(t, row) {
+      const d = read(); if (t === 'assets' && dupTag(d, row.tag)) throw new Error('An item with that asset tag already exists.');
+      if (t === 'part_moves') { const pt = d.parts.find(x => x.id === row.part_id); if (!pt || pt.quantity + row.change < 0) throw new Error('Not enough in stock for that.'); pt.quantity += row.change; }
+      const r = { id: uid(), created_at: new Date().toISOString(), ...row }; (d[t] = d[t] || []).push(r); save(); return clone(r);
+    },
+    async update(t, id, p) {
+      const d = read(); if (t === 'assets' && dupTag(d, p.tag, id)) throw new Error('An item with that asset tag already exists.');
+      const i = d[t].findIndex(r => r.id === id); d[t][i] = { ...d[t][i], ...p }; save(); return clone(d[t][i]);
+    },
+    async remove(t, id) {
+      const d = read();
+      if (t === 'part_moves') { const m = d.part_moves.find(x => x.id === id); const pt = m && d.parts.find(x => x.id === m.part_id); if (pt) pt.quantity -= m.change; }
+      if (t === 'parts') d.part_moves = d.part_moves.filter(m => m.part_id !== id);
+      d[t] = d[t].filter(r => r.id !== id);
+      if (t === 'assets') { d.inspections = (d.inspections || []).filter(j => j.asset_id !== id); d.logs = d.logs.filter(l => l.asset_id !== id); d.schedules = d.schedules.filter(s => s.asset_id !== id); }
+      save();
+    },
+    async upload(b, blob, name) {
+      const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+      const d = read(); d.files = d.files || {}; const path = uid().slice(0, 8) + '-' + (name || 'file'); d.files[path] = url; save(); return path;
+    },
+    async fileUrl(b, path) { return read().files?.[path] || ''; },
+  };
+}
+
+function demoSeed() {
+  const ago = d => new Date(Date.now() - d * DAY).toISOString(), day = d => ago(d).slice(0, 10);
+  const M = (tag, serial, model, wll, len, location, status, faulty) => ({ id: uid(), tag, serial, category: 'Chain motor', make: 'CM', model, wll_kg: wll, chain_length_m: len, speed: '4 m/min', voltage: '400V 3ph, D8+',
+    gauge_max_mm: null, gauge_links: 11, location, status, notes: '', created_at: ago(700), updated_at: ago(1), faulty_since: faulty != null ? ago(faulty) : null });
+  const a = [
+    M('CM 01','LS-110231','Lodestar 1 t',1000,20,'Motor cage','OK'), M('CM 02','LS-110232','Lodestar 1 t',1000,20,'Motor cage','OK'),
+    M('CM 03','LS-110240','Lodestar 1 t',1000,20,'Truck 2','OK'), M('CM 04','LS-110251','Lodestar 1 t',1000,30,'Repair bench','Out of service',9),
+    M('CM 05','LS-098812','Lodestar 1/2 t',500,20,'Motor cage','OK'), M('CM 06','LS-098813','Lodestar 1/2 t',500,20,'Motor cage','Faulty',75),
+    M('CM 07','LS-120004','Lodestar 2 t',2000,20,'Motor cage','OK'),
+    { id: uid(), tag: 'CTRL 01', serial: 'K8-0042', category: 'Controller', make: 'Generic', model: '8-way motor controller', location: 'Motor cage', status: 'OK', notes: '', created_at: ago(600), updated_at: ago(1), faulty_since: null },
+  ];
+  const T = t => a.find(x => x.tag === t).id;
+  const pass = Object.fromEntries(CHECKLIST.map(c => [c, 'pass']));
+  const I = (tag, kind, dAgo, result, extra = {}) => ({ id: uid(), asset_id: T(tag), kind, inspected_on: day(dAgo), checklist: kind === 'Periodic' ? { ...pass } : { 'Held the test load': 'pass', 'Brake & limits under load': 'pass', 'No abnormal noise/heat': 'pass' }, result, notes: 'All good', photos: [], inspector_name: 'Sam (tech)', created_by: 'demo-tech', created_at: ago(dAgo), gauge_mm: kind === 'Periodic' ? 141.2 : null, gauge_max_mm: kind === 'Periodic' ? 143.5 : null, test_load_kg: kind === 'Load test' ? 1250 : null, ...extra });
+  const inspections = [
+    I('CM 01','Periodic',40,'Pass'), I('CM 01','Load test',100,'Pass'),
+    I('CM 02','Periodic',170,'Pass'), I('CM 02','Load test',340,'Pass'),
+    I('CM 03','Periodic',210,'Pass'), I('CM 03','Load test',120,'Pass'),
+    I('CM 04','Periodic',9,'Fail', { checklist: { ...pass, 'Brake (holds, no slip)': 'fail' }, notes: 'Brake slipping under load, needs brake kit' }), I('CM 04','Load test',200,'Pass'),
+    I('CM 05','Periodic',60,'Pass', { gauge_max_mm: 114.0, gauge_mm: 112.6 }), I('CM 05','Load test',380,'Pass', { test_load_kg: 625 }),
+    I('CM 07','Periodic',20,'Pass'), I('CM 07','Load test',30,'Pass', { test_load_kg: 2500 }),
+  ];
+  const L = (tag, kind, title, details, daysAgo, extra = {}) => ({ id: uid(), asset_id: T(tag), kind, title, details, parts: '', status_after: null, photos: [], created_by: 'demo-tech', created_at: ago(daysAgo), ...extra });
+  const logs = [
+    L('CM 04','Inspection','Periodic inspection: FAIL','Failed: Brake (holds, no slip)\nBrake slipping under load, needs brake kit',9,{ status_after: 'Out of service' }),
+    L('CM 06','Fault','Chain jumping on the liftwheel','Chain skips under load going up. Pulled from stock.',75,{ status_after: 'Faulty' }),
+    L('CM 01','Inspection','Periodic inspection: PASS','Chain: 141.2 mm (limit 143.5)\nAll good',40),
+    L('CM 07','Inspection','Load test: PASS','Test load 2,500 kg\nAll good',30),
+  ];
+  const manuals = [{ id: uid(), make: 'CM', model: '', title: 'CM Entertainment manuals & downloads', url: 'https://www.cmentertainment.com', created_at: ago(300) }];
+  const profiles = [
+    { id:'demo-admin', name:'Demo Admin', email:'demo@example.com', role:'admin', created_at: ago(500) },
+    { id:'demo-tech', name:'Sam (tech)', email:'sam@example.com', role:'tech', created_at: ago(300) },
+    { id:'demo-new', name:'New starter', email:'new@example.com', role:'pending', created_at: ago(1) },
+  ];
+  return { assets: a, schedules: [], logs, inspections, manuals, profiles, files: {}, repair_jobs: [], ...demoParts(a) };
+}
+function demoParts(assets) {
+  const ago = d => new Date(Date.now() - d * DAY).toISOString();
+  const P = (name, make, part_number, supplier_code, quantity, unit_price, extra = {}) => ({ id: uid(), name, make, part_number, supplier_code, quantity, unit_price, min_qty: 0, condition: 'New', fits: '', location: '', notes: '', created_at: ago(300), updated_at: ago(5), ...extra });
+  const parts = [
+    P('Lodestar brake kit', 'CM', '', 'CMBK-1T', 2, 165.00, { fits: 'Lodestar 1 t', min_qty: 2, location: 'Parts shelf A' }),
+    P('Load chain 7.1 mm (per metre)', 'CM', '', 'CMCH-71', 30, 38.50, { fits: 'Lodestar 1 t', min_qty: 20 }),
+    P('Contactor', 'CM', '', 'CMCT-400', 1, 92.00, { fits: 'Lodestar', min_qty: 2 }),
+    P('Hook latch kit', 'CM', '', 'CMHL-1', 0, 24.00, { fits: 'Lodestar', min_qty: 4 }),
+    P('Limit switch assembly', 'CM', '', 'CMLS-2', 3, 118.00, { fits: 'Lodestar' }),
+  ];
+  const tag = t => assets.find(a => a.tag === t)?.id || null;
+  const part_moves = [
+    { id: uid(), part_id: parts[0].id, change: -1, kind: 'checkout', person_name: 'Sam (tech)', person_id: 'demo-tech', asset_id: tag('CM 04'), unit_price: 165, notes: 'Brake slipping', created_by: 'demo-tech', created_at: ago(8) },
+  ];
+  return { parts, part_moves };
+}
+
+const api = DEMO ? demoApi() : supabaseApi();
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = { booted:false, user:null, profile:null, recovery:false, authTab:'signin',
+  assets:[], logs:[], schedules:[], manuals:[], profiles:[], parts:[], part_moves:[], partsMissing:false, repair_jobs:[], repairsMissing:true, inspections:[],
+  filter:{ q:'', cat:'', status:'' }, dueTab:'due', manualQ:'', partQ:'', partMake:'',
+  afterScan: (() => { try { return localStorage.getItem('cl-after-scan') || 'open'; } catch { return 'open'; } })() };
+
+async function loadAll() {
+  const [assets, logs, inspections, manuals, profiles] = await Promise.all(['assets','logs','inspections','manuals','profiles'].map(t => api.all(t)));
+  Object.assign(S, { assets, logs, inspections, manuals, profiles, schedules: [] });
+  try { const [parts, part_moves] = await Promise.all([api.all('parts'), api.all('part_moves')]); Object.assign(S, { parts, part_moves, partsMissing: false }); }
+  catch { Object.assign(S, { parts: [], part_moves: [], partsMissing: true }); }
+  Object.assign(S, { repair_jobs: [], repairsMissing: true });   // not used in ChainLog
+}
+
+/* ---------- saved copy on this device: instant open + offline viewing ---------- */
+const SYNC_TABLES = ['assets', 'logs', 'inspections', 'manuals', 'profiles', 'parts', 'part_moves'];
+const cacheKey = id => 'cl-data-v1:' + id;
+let saveTimer = 0;
+function saveCache() {
+  if (DEMO || !S.user || !S.profile || S.profile.role === 'pending') return;
+  try {
+    const d = { at: S.lastSync || Date.now(), profile: S.profile, partsMissing: S.partsMissing, repairsMissing: S.repairsMissing };
+    for (const t of SYNC_TABLES) d[t] = S[t];
+    localStorage.setItem(cacheKey(S.user.id), JSON.stringify(d));
+  } catch {}
+}
+const scheduleSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveCache, 1500); };
+function readCache(id) { try { return JSON.parse(localStorage.getItem(cacheKey(id)) || 'null'); } catch { return null; } }
+function clearCaches() { try { for (const k of Object.keys(localStorage)) if (k.startsWith('cl-data-')) localStorage.removeItem(k); } catch {} }
+
+async function boot() {
+  try { S.user = await api.session(); } catch { S.user = null; }
+  const c = S.user && !DEMO ? readCache(S.user.id) : null;
+  if (c && c.profile && c.profile.role !== 'pending') {          // show the saved copy straight away…
+    for (const t of SYNC_TABLES) S[t] = c[t] || [];
+    Object.assign(S, { profile: c.profile, partsMissing: !!c.partsMissing, repairsMissing: !!c.repairsMissing, lastSync: c.at, booted: true });
+    render();
+    sync(true);                                                 // …then freshen it in the background
+    return;
+  }
+  try {
+    S.profile = S.user ? await api.profile(S.user.id) : null;
+    if (S.profile && S.profile.role !== 'pending') { await loadAll(); S.lastSync = Date.now(); S.offline = false; saveCache(); }
+  } catch (e) { S.offline = !navigator.onLine; toast('Could not load data: ' + errMsg(e), 'bad'); }
+  S.booted = true; render();
+}
+async function sync(quiet) {
+  if (DEMO || S.syncing || !S.user) return;
+  S.syncing = true;
+  try {
+    const prof = await api.profile(S.user.id);
+    if (!prof || prof.role === 'pending') { clearCaches(); S.profile = prof; for (const t of SYNC_TABLES) S[t] = []; render(); return; }   // access removed → wipe
+    S.profile = prof;
+    await loadAll();
+    Object.assign(S, { lastSync: Date.now(), offline: false });
+    saveCache();
+    if ($('#modal.open') || qr) S.needsRender = true; else render();
+    if (!quiet) toast('Up to date');
+  } catch (e) {
+    const wasOffline = S.offline; S.offline = true;
+    if (!quiet) toast(errMsg(e), 'bad');
+    if (!wasOffline && !$('#modal.open') && !qr) render();
+  } finally { S.syncing = false; }
+}
+
+/* ============================================================
+   MAINTENANCE LOGIC
+   ============================================================ */
+function longFaults() {
+  return S.assets.filter(a => BAD.includes(a.status) && a.faulty_since && daysSince(a.faulty_since) >= CFG.FAULT_ALERT_DAYS)
+    .sort((x, y) => new Date(x.faulty_since) - new Date(y.faulty_since));
+}
+function statusPatch(a, st) {
+  const p = { status: st };
+  if (BAD.includes(st) && !BAD.includes(a?.status)) p.faulty_since = new Date().toISOString();
+  if (!BAD.includes(st)) p.faulty_since = null;
+  return p;
+}
+/* Fast lookups, rebuilt once per screen draw (data only changes between draws) */
+let IDX = null;
+function idx() {
+  if (IDX) return IDX;
+  const logs = new Map(), moves = new Map(), byModel = new Map(), jobs = new Map(), insp = new Map();
+  for (const i of S.inspections) { let a = insp.get(i.asset_id); if (!a) insp.set(i.asset_id, a = []); a.push(i); }
+  for (const a of insp.values()) a.sort((x, y) => String(y.inspected_on).localeCompare(String(x.inspected_on)) || byNewest(x, y));
+  for (const j of S.repair_jobs) { let a = jobs.get(j.asset_id); if (!a) jobs.set(j.asset_id, a = []); a.push(j); }
+  for (const a of jobs.values()) a.sort((x, y) => String(y.sent_at).localeCompare(String(x.sent_at)));
+  for (const l of S.logs) { let a = logs.get(l.asset_id); if (!a) logs.set(l.asset_id, a = []); a.push(l); }
+  for (const a of logs.values()) a.sort(byNewest);
+  for (const m of S.part_moves) { if (!m.asset_id) continue; let a = moves.get(m.asset_id); if (!a) moves.set(m.asset_id, a = []); a.push(m); }
+  for (const a of S.assets) { if (a.status === 'Retired') continue; const k = norm(a.make) + '|' + norm(a.model); let x = byModel.get(k); if (!x) byModel.set(k, x = []); x.push(a); }
+  return IDX = { logs, moves, byModel, jobs, insp, due: null, dueI: null };
+}
+const logsFor = id => idx().logs.get(id) || [];
+const movesFor = id => idx().moves.get(id) || [];
+function scheduleTargets(s) {
+  if (s.asset_id) { const a = assetById(s.asset_id); return a && a.status !== 'Retired' ? [a] : []; }
+  return idx().byModel.get(norm(s.make) + '|' + norm(s.model)) || [];
+}
+function dueFor(s, a) {
+  const last = logsFor(a.id).find(l => l.schedule_id === s.id);
+  const base = last ? last.created_at : a.created_at;
+  let state = 'ok', dueDate = null, daysLeft = null, hoursLeft = null;
+  if (s.interval_days) {
+    dueDate = new Date(new Date(base).getTime() + s.interval_days * DAY);
+    daysLeft = Math.ceil((dueDate - Date.now()) / DAY);
+    state = daysLeft < 0 ? 'overdue' : daysLeft <= CFG.DUE_SOON_DAYS ? 'soon' : 'ok';
+  }
+  const basis = s.hours_basis === 'fixture' ? 'fixture_hours' : 'lamp_hours';
+  if (s.interval_hours && hasH(a[basis])) {
+    const lastH = last && hasH(last[basis]) ? Number(last[basis]) : 0;
+    hoursLeft = Math.round(lastH + Number(s.interval_hours) - Number(a[basis]));
+    if (hoursLeft <= 0) state = 'overdue';
+    else if (hoursLeft <= s.interval_hours * 0.1 && state === 'ok') state = 'soon';
+  }
+  return { s, a, last, dueDate, daysLeft, hoursLeft, state };
+}
+function dueList() {
+  if (idx().due) return idx().due;
+  const out = []; const rank = { overdue:0, soon:1, ok:2 };
+  for (const s of S.schedules) for (const a of scheduleTargets(s)) out.push(dueFor(s, a));
+  const key = d => d.daysLeft ?? d.hoursLeft ?? 1e9;
+  return idx().due = out.sort((x, y) => rank[x.state] - rank[y.state] || key(x) - key(y));
+}
+function dueText(d) {
+  const p = [];
+  if (d.daysLeft != null) p.push(d.daysLeft < 0 ? `${-d.daysLeft} days overdue` : d.daysLeft === 0 ? 'due today' : `due in ${d.daysLeft} days`);
+  const hl = d.s.hours_basis === 'fixture' ? 'fixture' : 'lamp';
+  if (d.hoursLeft != null) p.push(d.hoursLeft <= 0 ? `${-d.hoursLeft} ${hl} h over` : `${d.hoursLeft} ${hl} h left`);
+  return p.join(' · ') || '—';
+}
+const duePill = d => `<span class="pill d-${d.state}">${d.state === 'overdue' ? 'Overdue' : d.state === 'soon' ? 'Due soon' : 'OK'}</span>`;
+function manualsFor(a) {
+  return S.manuals.filter(m => norm(m.make) === norm(a.make) && (!norm(m.model) || norm(m.model) === norm(a.model)));
+}
+function lastActivity(a) { return logsFor(a.id)[0]; }
+
+/* ============================================================
+   ROUTING & RENDER
+   ============================================================ */
+function route() {
+  const parts = (location.hash || '#/dashboard').slice(2).split('/');
+  return { p: parts[0] || 'dashboard', arg: decodeURIComponent(parts.slice(1).join('/')) };
+}
+window.addEventListener('hashchange', () => { window.scrollTo(0, 0); render(); });
+
+function render() {
+  IDX = null; S.needsRender = false;
+  if (S.booted && S.profile && S.profile.role !== 'pending') scheduleSave();
+  const r = route(); const app = $('#app');
+  if (r.p !== 'scan') camStop();
+  if (!S.booted) { app.innerHTML = '<div class="center muted">Loading…</div>'; return; }
+  if (S.recovery) { app.innerHTML = vRecovery(); return; }
+  if (!S.user) { app.innerHTML = vLogin(); return; }
+  if (!S.profile || S.profile.role === 'pending') { app.innerHTML = vPending(); return; }
+  if (r.p === 'tag') { lookup(r.arg, true); return; }
+  const views = { inspections:vInspections, parts:vParts, part:() => vPart(r.arg), dashboard:vDashboard, scan:vScan, assets:vAssets, asset:() => vAsset(r.arg), schedules:vSchedules, manuals:vManuals, reports:vReports, team:vTeam };
+  app.innerHTML = shell(r.p, (views[r.p] || vDashboard)());
+  document.body.classList.remove('nav-open');
+  hydrateImages();
+  if (r.p === 'scan' && matchMedia('(min-width:861px)').matches) $('#code-input')?.focus();
+}
+
+function shell(p, body) {
+  const pending = isAdmin() ? S.profiles.filter(x => x.role === 'pending').length : 0;
+  const lf = longFaults().length;
+  const item = (k, icn, label, badge) => `<a href="#/${k}" class="nav-i ${p === k || ((k === 'assets' && p === 'asset') || (k === 'parts' && p === 'part')) ? 'on' : ''}">${ic(icn)}<span>${label}</span>${badge ? `<em class="badge">${badge}</em>` : ''}</a>`;
+  return `${S.offline ? `<div class="demo-bar" style="background:#2a1416;color:#ff9a9a;border-color:#5a2328">📵 No signal — showing what was saved${S.lastSync ? ' ' + fmtDT(S.lastSync) : ''}. Looking things up works; saving needs signal.</div>` : ''}${S.updateReady ? `<div class="demo-bar" style="background:#10261b;color:#7ee2b0;border-color:#1d4a33">A new version of ChainLog is ready. <button class="btn sm" data-act="reload-app" style="margin-left:8px;height:26px">Update now</button></div>` : ''}${DEMO ? '<div class="demo-bar">Demo mode — sample data, saved only in this browser. Add your Supabase keys to config.js to go live with team log-ins.</div>' : ''}
+  <div class="topbar"><button class="icon-btn" data-act="nav-toggle" aria-label="Menu">${ic('menu')}</button><span class="brand">${LOGO}${h(CFG.APP_NAME)}</span><a class="icon-btn" href="#/scan" aria-label="Scan">${ic('scan')}</a></div>
+  <div class="layout">
+    <aside class="side">
+      <div class="brand">${LOGO}${h(CFG.APP_NAME)}</div>
+      <nav>
+        ${item('dashboard','home','Dashboard', lf)}
+        ${item('scan','scan','Scan')}
+        ${item('assets','box','Motors')}
+        ${item('inspections','check','Inspections', motorsOverdue().length)}
+        ${item('parts','parts','Spare parts', S.parts.filter(isLow).length)}
+        ${item('manuals','book','Manuals')}
+        ${item('reports','chart','Reports')}
+        ${item('team','users','Team', pending)}
+      </nav>
+      <div class="side-foot">
+        <div class="me"><strong>${h(S.profile.name)}</strong><span class="muted small">${h(S.profile.role === 'admin' ? 'Admin' : 'Technician')}</span></div>
+        <button class="nav-i" data-act="refresh">${ic('refresh')}<span>Refresh</span></button>
+        <button class="nav-i" data-act="signout">${ic('logout')}<span>${DEMO ? 'Reset demo' : 'Sign out'}</span></button>
+      </div>
+    </aside>
+    <div class="scrim" data-act="nav-close"></div>
+    <main class="main">${body}</main>
+  </div>
+  ${p !== 'scan' ? `<a class="fab" href="#/scan" aria-label="Scan">${ic('scan')}</a>` : ''}`;
+}
+
+/* ---------- auth views ---------- */
+function vLogin() {
+  const t = S.authTab;
+  return `<div class="auth"><div class="auth-card">
+    <div class="brand">${LOGO}${h(CFG.APP_NAME)}</div>
+    <p class="muted" style="text-align:center">Fixture & console maintenance log</p>
+    <div class="card">
+      <div class="tabs"><button class="${t === 'signin' ? 'on' : ''}" data-act="auth-tab" data-tab="signin">Sign in</button><button class="${t === 'signup' ? 'on' : ''}" data-act="auth-tab" data-tab="signup">Create account</button></div>
+      ${t === 'signin' ? `
+      <form data-form="signin">
+        <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label>Password</label><input name="password" type="password" autocomplete="current-password" required></div>
+        <button class="btn primary" style="width:100%;justify-content:center">Sign in</button>
+        <div class="err" id="auth-err"></div>
+        <p class="small" style="text-align:center;margin-top:6px"><a href="#" data-act="forgot" class="muted">Forgot password?</a></p>
+      </form>` : `
+      <form data-form="signup">
+        <div class="field"><label>Your name</label><input name="name" required autocomplete="name"></div>
+        <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
+        <div class="field"><label>Password (8+ characters)</label><input name="password" type="password" minlength="8" required autocomplete="new-password"></div>
+        <button class="btn primary" style="width:100%;justify-content:center">Create account</button>
+        <div class="err" id="auth-err"></div>
+        <p class="small muted" style="margin-top:6px">An admin approves new accounts before they can see data.</p>
+      </form>`}
+    </div></div></div>`;
+}
+function vPending() {
+  return `<div class="auth"><div class="auth-card"><div class="brand">${LOGO}${h(CFG.APP_NAME)}</div>
+    <div class="card" style="text-align:center">
+      <h3 style="margin:0 0 8px">Waiting for approval</h3>
+      <p class="muted">You're signed in as ${h(S.user?.email)}. An admin needs to approve your account on the Team page before you can see the maintenance log.</p>
+      <div class="row" style="justify-content:center;margin-top:16px"><button class="btn" data-act="recheck">Check again</button><button class="btn" data-act="signout">Sign out</button></div>
+    </div></div></div>`;
+}
+function vRecovery() {
+  return `<div class="auth"><div class="auth-card"><div class="brand">${LOGO}${h(CFG.APP_NAME)}</div><div class="card">
+    <form data-form="newpw"><div class="field"><label>New password</label><input name="password" type="password" minlength="8" required autocomplete="new-password"></div>
+    <button class="btn primary" style="width:100%;justify-content:center">Set password</button><div class="err" id="auth-err"></div></form></div></div></div>`;
+}
+
+/* ---------- dashboard ---------- */
+function vDashboard() {
+  const active = S.assets.filter(a => a.status !== 'Retired'), motors = S.assets.filter(isMotor);
+  const bad = active.filter(a => BAD.includes(a.status)).sort((x, y) => new Date(x.faulty_since || 0) - new Date(y.faulty_since || 0));
+  const lf = longFaults(), overdue = motorsOverdue();
+  const soon = dueAll().filter(d => d.state === 'soon');
+  const stat = (label, val, cls, href) => `<a class="stat ${cls}" href="${href}"><span class="muted small">${label}</span><b>${val}</b></a>`;
+  return `
+  <header class="page-h"><div><h1>Dashboard</h1><p class="muted">${new Date().toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long' })}</p></div>
+    <div class="row"><button class="btn" data-act="asset-new">${ic('plus')} Add motor</button><a class="btn primary" href="#/scan">${ic('scan')} Scan motor</a></div></header>
+  <div class="stats">
+    ${stat('Chain motors', motors.length, '', '#/assets')}
+    ${stat('Cleared for use', motors.filter(cleared).length, 'ok', '#/inspections')}
+    ${stat('Faulty / tagged out', bad.length, bad.length ? 'bad' : '', '#/assets')}
+    ${stat('Inspection overdue', overdue.length, overdue.length ? 'bad' : '', '#/inspections')}
+  </div>
+  ${overdue.length ? `<section class="alert bad"><div class="alert-h">${ic('alert')} ${overdue.length} motor${overdue.length > 1 ? 's are' : ' is'} out of date for inspection or load test — don't send ${overdue.length > 1 ? 'them' : 'it'} out</div>
+    <ul>${overdue.slice(0, 8).map(a => { const ds = ['Periodic', 'Load test'].map(k => dueOf(a, k)).filter(dueBad); return `<li><a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span>${h(a.model || '')}</span><span class="spacer"></span><span class="small">${ds.map(d => (d.kind === 'Load test' ? 'Load test: ' : 'Inspection: ') + (d.state === 'failed' ? 'failed' : d.state === 'never' ? 'not on record' : -d.left + ' d overdue')).join(' · ')}</span></li>`; }).join('')}</ul>
+    ${overdue.length > 8 ? `<p class="small" style="margin-top:8px"><a href="#/inspections">See all ${overdue.length} →</a></p>` : ''}</section>` : ''}
+  ${lf.length ? `<section class="alert warn"><div class="alert-h">${ic('alert')} ${lf.length} motor${lf.length > 1 ? 's have' : ' has'} been faulty for over ${Math.round(CFG.FAULT_ALERT_DAYS / 30)} months</div>
+    <ul>${lf.map(a => `<li><a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span>${h(a.make)} ${h(a.model)}</span>${apill(a)}<span class="spacer"></span><strong>${daysSince(a.faulty_since)} days</strong></li>`).join('')}</ul></section>` : ''}
+  <div class="grid2">
+    <section class="card"><h2>Faulty / tagged out</h2>
+      ${bad.length ? `<ul class="list">${bad.map(a => { const l = logsFor(a.id).find(x => x.kind === 'Fault' || (x.kind === 'Inspection' && /FAIL/.test(x.title)));
+        return `<li><a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span>${h(a.model)}</span>${apill(a)}<span class="spacer"></span><span class="muted small">${a.faulty_since ? daysSince(a.faulty_since) + ' d' : ''}</span>${l || a.location ? `<div class="muted small" style="width:100%">${l ? h(l.title) : ''}${l && a.location ? ' · ' : ''}${a.location ? '📍 ' + h(a.location) : ''}</div>` : ''}</li>`; }).join('')}</ul>` : '<p class="empty">Nothing faulty. Nice.</p>'}
+    </section>
+    <section class="card"><h2>Due in the next ${CFG.DUE_SOON_DAYS} days</h2>
+      ${soon.length ? `<ul class="list">${soon.slice(0, 10).map(d => `<li><a href="#/asset/${d.a.id}" class="tag">${h(d.a.tag)}</a><span>${KIND_LABEL[d.kind]}</span><span class="spacer"></span>${inspPill(d)}<span class="muted small" style="width:100%">${h(d.a.model || '')} · ${dueTextI(d)}</span></li>`).join('')}</ul>
+        ${soon.length > 10 ? `<p style="margin-top:10px"><a href="#/inspections" class="small muted">See all ${soon.length} →</a></p>` : ''}` : '<p class="empty">Nothing coming due.</p>'}
+    </section>
+  </div>
+  <section class="card" style="margin-top:16px"><h2>Recent activity</h2>
+    ${S.logs.length ? `<ul class="tl">${S.logs.slice(0, 8).map(l => logItem(l, true)).join('')}</ul>` : '<p class="empty">No entries yet. Scan a motor to start.</p>'}
+  </section>`;
+}
+
+/* ---------- scan ---------- */
+function vScan() {
+  return `<header class="page-h"><div><h1>Scan</h1><p class="muted">Scan the QR on a chain motor to open its record.</p></div></header>
+  <section class="card">
+    <div id="reader" class="reader" hidden></div>
+    <div class="scan-big" id="scan-idle">
+      <div class="scan-ring">${ic('scan')}</div>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-act="cam-start">${ic('camera')} Start camera</button>
+      <label class="btn" style="margin:0">${ic('camera')} Take a photo<input type="file" accept="image/*" capture="environment" data-photo-scan hidden></label></div>
+    </div>
+    <div class="note" id="cam-msg" hidden style="max-width:520px;margin:0 auto 14px;color:#f7cf86"></div>
+    <div class="row" style="justify-content:center;margin-bottom:16px"><button class="btn" id="cam-stop" data-act="cam-stop" hidden>Stop camera</button></div>
+    <form data-form="lookup" class="lookup"><input id="code-input" name="code" placeholder="Type an asset number or use a scanner gun" autocomplete="off" autocapitalize="characters" required><button class="btn">Find</button></form>
+    <div class="row" style="justify-content:center;margin-top:14px"><label for="after-scan" style="margin:0">After a scan</label>
+      <select id="after-scan" data-after-scan style="width:auto">${[['open','Open the motor'],['inspect','Start an inspection'],['log','Start a log entry'],['fault','Report a fault']].map(([v, l]) => `<option value="${v}" ${S.afterScan === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <p class="muted small" style="text-align:center;margin-top:12px">Codes match a motor's tag or serial — dashes, spaces and leading zeros don't matter (CM-007 finds CM 7). Unknown codes can be linked to an existing motor or added new.</p>
+    <p class="muted small" style="text-align:center;margin-top:6px">🔫 USB / Bluetooth scanner: scan from any page — you don't need to be here.</p>
+  </section>`;
+}
+let qr = null;   /* live scanner state: { stream, track, video, timer, n } */
+function camProblem(e) {
+  const s = (e?.name || '') + ' ' + errMsg(e);
+  if (/NotAllowed|Permission|denied/i.test(s)) return 'Camera access is blocked for this site. Allow the camera in your browser settings (iPhone: Settings → Safari → Camera → Allow), then try again — or use "Take a photo".';
+  if (/NotFound|no camera|Requested device not found|Overconstrained/i.test(s)) return 'No camera found on this device. Use "Take a photo" or type the code.';
+  if (/NotReadable|in use|Could not start/i.test(s)) return 'The camera is busy in another app. Close it and try again, or use "Take a photo".';
+  return 'The live camera couldn\'t start (' + s.trim() + '). Use "Take a photo" instead.';
+}
+function showCamMsg(msg) { const el = $('#cam-msg'); if (el) { el.textContent = msg; el.hidden = !msg; } }
+
+/* Decoder: jsQR, trying normal AND inverted codes (your stickers are white-on-black). */
+const scanCanvas = document.createElement('canvas');
+const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+/* Glare/low-contrast rescue: local-average threshold, so a washed-out patch of a shiny label still separates. */
+/* [radius px at 640, offset, invert]: tuned on real white-on-black Powa stickers (X-Frame 055, Strike-M 012) */
+const CLEANUP = [[16, 8, 1], [12, 8, 1], [24, 12, 1], [16, 12, 1], [12, 12, 1], [32, 16, 1], [24, 8, 1], [16, 8, 0], [8, 4, 1], [12, 4, 0]];
+function cleanupDecode(px, w, hh, [rp, c, inv]) {
+  const n = w * hh, g = new Float32Array(n);
+  for (let i = 0; i < n; i++) g[i] = .299 * px[i * 4] + .587 * px[i * 4 + 1] + .114 * px[i * 4 + 2];
+  const W1 = w + 1, I = new Float64Array(W1 * (hh + 1));
+  for (let y = 0; y < hh; y++) { let row = 0; for (let x = 0; x < w; x++) { row += g[y * w + x]; I[(y + 1) * W1 + x + 1] = I[y * W1 + x + 1] + row; } }
+  const r = Math.max(3, Math.round(rp * Math.min(w, hh) / 640)), out = new Uint8ClampedArray(n * 4);
+  for (let y = 0; y < hh; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(hh, y + r + 1);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+      const m = (I[y1 * W1 + x1] - I[y0 * W1 + x1] - I[y1 * W1 + x0] + I[y0 * W1 + x0]) / ((x1 - x0) * (y1 - y0));
+      const v = ((g[y * w + x] > m + c) !== !!inv) ? 255 : 0, j = (y * w + x) * 4;   // invert: bright modules → black
+      out[j] = out[j + 1] = out[j + 2] = v; out[j + 3] = 255;
+    }
+  }
+  const res = window.jsQR(out, w, hh, { inversionAttempts: 'dontInvert' });
+  return res && res.data ? res.data.trim() : null;
+}
+/* passes: 'plain' = normal + inverted; a number = one cleanup recipe; 'all' = plain then every recipe */
+function decodeRegion(src, sx, sy, sw, sh, maxSide, passes = 'plain') {
+  const k = Math.min(1, maxSide / Math.max(sw, sh));
+  const w = Math.max(1, Math.round(sw * k)), hh = Math.max(1, Math.round(sh * k));
+  scanCanvas.width = w; scanCanvas.height = hh;
+  scanCtx.drawImage(src, sx, sy, sw, sh, 0, 0, w, hh);
+  const px = scanCtx.getImageData(0, 0, w, hh).data;
+  if (passes === 'plain' || passes === 'all') {
+    const r = window.jsQR(px, w, hh, { inversionAttempts: 'attemptBoth' });
+    if (r && r.data) return r.data.trim();
+  }
+  const recipes = passes === 'all' ? CLEANUP : typeof passes === 'number' ? [CLEANUP[passes % CLEANUP.length]] : [];
+  for (const rc of recipes) { const t = cleanupDecode(px, w, hh, rc); if (t) return t; }
+  return null;
+}
+
+async function camStart() {
+  showCamMsg('');
+  if (!window.jsQR) return showCamMsg('The scanner didn\'t load. Reload the page and try again.');
+  if (!isSecureContext) return showCamMsg('The camera only works when the app is opened from its https:// web address.');
+  if (!navigator.mediaDevices?.getUserMedia) return showCamMsg('This browser can\'t use the live camera (some in-app browsers block it). Open the link in Safari or Chrome, or use "Take a photo".');
+  await camStop();
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+  } catch (e) { return showCamMsg(camProblem(e)); }
+  const box = $('#reader'); if (!box) { stream.getTracks().forEach(t => t.stop()); return; }
+  box.innerHTML = `<video playsinline muted autoplay></video><div class="aim"></div><div class="cam-tools" id="cam-tools"></div>`;
+  const video = box.querySelector('video'); video.srcObject = stream;
+  $('#scan-idle').hidden = true; $('#cam-stop').hidden = false; box.hidden = false;
+  const track = stream.getVideoTracks()[0];
+  qr = { stream, track, video, timer: 0, n: 0, zoom: 1 };
+  try { await video.play(); } catch {}
+  try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch {}
+  camTools();
+  showCamMsg('');
+  const tick = () => {
+    if (!qr || qr.video !== video) return;
+    if (video.readyState >= 2 && video.videoWidth) {
+      const vw = video.videoWidth, vh = video.videoHeight; qr.n++;
+      if (qr.n === 1) { const aim = $('#reader .aim'); if (aim) aim.style.width = (75 * Math.min(vw, vh) / vw) + '%'; }
+      let txt = null;
+      try {
+        const side = Math.round(Math.min(vw, vh) * 0.75);                       // the aiming square, full detail
+        const sq = [(vw - side) / 2, (vh - side) / 2, side, side];
+        txt = decodeRegion(video, ...sq, 900);
+        if (!txt) txt = decodeRegion(video, ...sq, 640, qr.n);                     // glare clean-up, a different recipe each frame
+        if (!txt && qr.n % 3 === 0) txt = decodeRegion(video, 0, 0, vw, vh, 1280);   // whole picture now and then
+      } catch {}
+      if (txt) { if (navigator.vibrate) navigator.vibrate(60); camStop(); lookup(txt); return; }
+      if (qr.n === 40) showCamMsg('Not picking it up? Move closer so the sticker fills the square, hold steady, and turn on the light if it\'s dark.');
+    }
+    qr.timer = setTimeout(tick, 120);
+  };
+  tick();
+}
+function camTools() {
+  const el = $('#cam-tools'); if (!el || !qr) return;
+  let caps = {}; try { caps = qr.track.getCapabilities?.() || {}; } catch {}
+  const btns = [];
+  if (caps.torch) btns.push(`<button type="button" class="btn sm" data-act="cam-torch">💡 Light</button>`);
+  if (caps.zoom && caps.zoom.max >= 2) btns.push(`<button type="button" class="btn sm" data-act="cam-zoom">🔍 Zoom ${qr.zoom > 1 ? '1×' : '2×'}</button>`);
+  el.innerHTML = btns.join('');
+}
+async function camTorch() {
+  if (!qr) return; qr.torch = !qr.torch;
+  try { await qr.track.applyConstraints({ advanced: [{ torch: qr.torch }] }); } catch { toast('Light not available on this camera', 'warn'); }
+}
+async function camZoom() {
+  if (!qr) return; const caps = qr.track.getCapabilities?.() || {};
+  qr.zoom = qr.zoom > 1 ? Math.max(1, caps.zoom?.min || 1) : Math.min(2, caps.zoom?.max || 2);
+  try { await qr.track.applyConstraints({ advanced: [{ zoom: qr.zoom }] }); } catch {}
+  camTools();
+}
+async function camStop() {
+  if (!qr) return; const q = qr; qr = null;
+  clearTimeout(q.timer);
+  try { q.stream.getTracks().forEach(t => t.stop()); } catch {}
+  const box = $('#reader'); if (box) { box.innerHTML = ''; box.hidden = true; }
+  const idle = $('#scan-idle'); if (idle) { idle.hidden = false; $('#cam-stop').hidden = true; }
+}
+async function scanPhoto(input) {
+  const file = input.files?.[0]; input.value = ''; if (!file) return;
+  if (!window.jsQR) return showCamMsg('The scanner didn\'t load. Reload the page and try again.');
+  showCamMsg('Reading code…');
+  await new Promise(r => setTimeout(r, 30));
+  let img;
+  try { img = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch { try { img = await createImageBitmap(file); } catch { return showCamMsg('Couldn\'t open that photo.'); } }
+  const W = img.width, H = img.height, m = Math.min(W, H);
+  const tries = [
+    [0, 0, W, H, 1600],                                   // whole photo
+    [(W - m * .6) / 2, (H - m * .6) / 2, m * .6, m * .6, 1200],   // centre
+    [0, 0, W, H, 2600],                                   // whole photo, more detail
+  ];
+  for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) tries.push([gx * W / 4, gy * H / 4, W / 2, H / 2, 1200]);  // overlapping quarters
+  let txt = null;
+  for (const [x, y, w, hh, max] of tries) { try { txt = decodeRegion(img, x, y, w, hh, max); } catch {} if (txt) break; await new Promise(r => setTimeout(r, 0)); }
+  if (!txt) for (const [x, y, w, hh] of tries.slice(0, 2).concat(tries.slice(3))) {    // glare clean-up passes
+    try { txt = decodeRegion(img, x, y, w, hh, 640, 'all'); } catch {} if (txt) break; await new Promise(r => setTimeout(r, 0));
+  }
+  img.close?.();
+  if (txt) { showCamMsg(''); lookup(txt); }
+  else showCamMsg('Couldn\'t find a QR code in that photo. Get closer so the sticker is big in the picture, keep it in focus, and avoid glare.');
+}
+function lookup(raw, fromRoute) {
+  let code = String(raw || '').trim();
+  const m = code.match(/#\/tag\/(.+)$/); if (m) code = decodeURIComponent(m[1]);
+  if (!code) return;
+  const k = codeKey(code);
+  const a = S.assets.find(x => norm(x.tag) === norm(code)) || S.assets.find(x => x.serial && norm(x.serial) === norm(code))
+    || S.assets.find(x => codeKey(x.tag) === k) || S.assets.find(x => x.serial && codeKey(x.serial) === k);
+  if (a) {
+    const to = '#/asset/' + a.id; beep(true);
+    fromRoute ? location.replace(to) : (location.hash = to);
+    if (!fromRoute && S.afterScan === 'inspect') setTimeout(() => inspModal(a.id), 60);
+    else if (!fromRoute && S.afterScan !== 'open') setTimeout(() => logModal(a.id, S.afterScan === 'fault' ? { kind: 'Fault' } : {}), 60);
+    return;
+  }
+  beep(false);
+  if (fromRoute) location.replace('#/scan');
+  unknownModal(code);
+}
+/* Codes match ignoring case, spaces, dashes and leading zeros: "XFRAME-055" = "X-Frame 55" */
+function codeKey(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim().split(' ')
+    .map(t => /^\d+$/.test(t) ? t.replace(/^0+(?=\d)/, '') : t).join('');
+}
+function unknownModal(code) {
+  openModal('Code not found', `<div class="note">Scanned <span class="tag">${h(code)}</span> — no item matches it yet.</div>
+    <form data-form="link-code">${datalists()}<input type="hidden" name="code" value="${h(code)}">
+      <div class="field"><label>It's this existing item (search by tag or serial)</label><input name="tag" list="dl-tag" placeholder="e.g. CM 07" autocomplete="off" required></div>
+      <p class="muted small" style="margin:-6px 0 14px">The item's tag becomes <span class="mono">${h(code)}</span>, so this sticker opens it from now on.</p>
+      <div class="modal-f" style="justify-content:space-between"><button type="button" class="btn" data-act="add-from-code" data-code="${h(code)}">${ic('plus')} Add as new item</button><button class="btn primary">Link to item</button></div>
+    </form>`);
+}
+async function linkCode(f) {
+  const fd = new FormData(f); const code = fd.get('code'), t = fd.get('tag');
+  const a = S.assets.find(x => norm(x.tag) === norm(t)) || S.assets.find(x => x.serial && norm(x.serial) === norm(t)) || S.assets.find(x => codeKey(x.tag) === codeKey(t));
+  if (!a) throw new Error('No item with that tag or serial.');
+  if (!confirm(`Change ${a.tag} (${a.model}) to tag ${code}?`)) return;
+  const old = a.tag;
+  Object.assign(a, await api.update('assets', a.id, { tag: code, updated_at: new Date().toISOString(), updated_by: S.user.id }));
+  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: 'Note', title: `QR code linked: ${code}`, details: `Tag changed from ${old}`, photos: [], created_by: S.user.id }));
+  toast('Linked'); closeModal(); location.hash = '#/asset/' + a.id;
+}
+
+/* ---------- items ---------- */
+function vAssets() {
+  assetLimit = 150;
+  const f = S.filter;
+  return `<header class="page-h"><div><h1>Motors</h1><p class="muted">${S.assets.length} motors and controllers</p></div>
+    <div class="row"><button class="btn" data-act="export" data-what="inventory">${ic('download')} CSV</button><button class="btn primary" data-act="asset-new">${ic('plus')} Add motor</button></div></header>
+  <section class="card">
+    <div class="filters">
+      <input data-filter="q" placeholder="Search tag, serial, make, model, location…" value="${h(f.q)}">
+      <select data-filter="cat"><option value="">All types</option>${CATS.map(c => `<option ${f.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+      <select data-filter="status"><option value="">All statuses</option><option value="__bad" ${f.status === '__bad' ? 'selected' : ''}>Any fault</option>${STATUSES.map(s => `<option ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+    </div>
+    <div id="asset-list">${assetTable()}</div>
+  </section>`;
+}
+function filteredAssets() {
+  const f = S.filter, q = norm(f.q);
+  return S.assets.filter(a => (!f.cat || a.category === f.cat)
+    && (!f.status || (f.status === '__bad' ? BAD.includes(a.status) : a.status === f.status))
+    && (!q || [a.tag, a.serial, a.make, a.model, a.location].some(v => norm(v).includes(q))))
+    .sort((x, y) => F_SORT.compare(String(x.tag), String(y.tag)));
+}
+let assetLimit = 150;
+function assetTable() {
+  const all = filteredAssets();
+  if (!all.length) return '<p class="empty">No motors match.</p>';
+  const rows = all.slice(0, assetLimit), more = all.length - rows.length;
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tag</th><th>Motor</th><th class="hide-m">WLL</th><th class="hide-m">Location</th><th>Status</th><th class="hide-m">Inspection</th><th class="hide-m">Last activity</th></tr></thead><tbody>
+  ${rows.map(a => { const l = lastActivity(a); return `<tr class="click" data-act="go" data-href="#/asset/${a.id}">
+    <td><span class="tag">${h(a.tag)}</span></td><td><div>${h(a.make)} ${h(a.model)}</div>${a.serial ? `<div class="muted small mono">${h(a.serial)}</div>` : ''}</td>
+    <td class="hide-m">${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : a.category !== 'Chain motor' ? h(a.category) : '—'}</td><td class="hide-m">${h(a.location || '—')}</td><td>${apill(a)}</td>
+    <td class="hide-m">${isMotor(a) ? (() => { const ds = ['Periodic', 'Load test'].map(k => dueOf(a, k)); const w = ds.find(dueBad) || ds.find(d => d.state === 'soon') || ds[0]; return inspPill(w); })() : ''}</td><td class="hide-m muted small">${l ? h(l.kind) + ' · ' + fmtDate(l.created_at) : '—'}</td></tr>`; }).join('')}
+  </tbody></table></div>${more ? `<div class="row" style="justify-content:center;margin-top:14px"><button class="btn" data-act="assets-more">Show ${more} more</button></div>` : ''}`;
+}
+
+/* ---------- item detail ---------- */
+function vAsset(id) {
+  const a = assetById(id);
+  if (!a) return `<p class="empty">Motor not found. <a href="#/assets">Back to motors</a></p>`;
+  const logs = logsFor(a.id);
+  const mans = manualsFor(a);
+  const long = BAD.includes(a.status) && a.faulty_since && daysSince(a.faulty_since) >= CFG.FAULT_ALERT_DAYS;
+  const kv = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
+  return `
+  <p class="small" style="margin-bottom:10px"><a href="#/assets" class="muted" style="text-decoration:none">← Motors</a></p>
+  <div class="a-head">
+    <div><h1><span class="tag">${h(a.tag)}</span> &nbsp;${h(a.make)} ${h(a.model)}</h1>
+      <div class="row" style="margin-top:8px">${apill(a)}${BAD.includes(a.status) && a.faulty_since ? `<span class="muted small">for ${daysSince(a.faulty_since)} days (since ${fmtDate(a.faulty_since)})</span>` : ''}</div></div>
+    <div class="row">
+      ${a.category === 'Chain motor' && a.status !== 'Retired' ? `<button class="btn primary" data-act="inspect" data-id="${a.id}" data-kind="Periodic">${ic('check')} Inspect</button>` : ''}
+      <button class="btn ${a.category === 'Chain motor' ? '' : 'primary'}" data-act="log-new" data-id="${a.id}">${ic('plus')} Log entry</button>
+      ${a.status === 'OK' ? `<button class="btn" data-act="log-new" data-id="${a.id}" data-kind="Fault">${ic('alert')} Report fault</button>` : `<button class="btn" data-act="log-new" data-id="${a.id}" data-kind="Repair">${ic('check')} Log repair</button>`}
+      ${S.repairsMissing || a.status === 'Retired' ? '' : openJob(a.id) ? `<button class="btn" data-act="repair-return" data-id="${openJob(a.id).id}">${ic('truck')} Back from ${h(openJob(a.id).repairer)}</button>` : `<button class="btn" data-act="repair-send" data-id="${a.id}">${ic('truck')} Send for repair</button>`}
+      <button class="btn" data-act="asset-edit" data-id="${a.id}">${ic('edit')} Edit</button>
+      <button class="btn" data-act="print-asset" data-id="${a.id}">${ic('print')} History PDF</button>
+    </div>
+  </div>
+  ${clearanceBanner(a)}
+  ${long ? `<div class="alert warn"><div class="alert-h">${ic('alert')} Faulty for ${daysSince(a.faulty_since)} days — over the ${CFG.FAULT_ALERT_DAYS}-day limit</div><p class="small">Chase the repair or retire it.</p></div>` : ''}
+  <section class="card"><div class="kv">
+    ${kv('Asset tag', `<span class="mono">${h(a.tag)}</span>`)}${kv('Serial', `<span class="mono">${h(a.serial || '—')}</span>`)}${kv('Type', h(a.category))}${kv('Location', h(a.location || '—'))}
+    ${kv('Make', h(a.make || '—'))}${kv('Model', h(a.model || '—'))}${kv('Working load limit', hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : '—')}${kv('Chain length', hasH(a.chain_length_m) ? a.chain_length_m + ' m' : '—')}
+    ${kv('Speed', h(a.speed || '—'))}${kv('Power / control', h(a.voltage || '—'))}${kv('Chain wear limit', hasH(a.gauge_max_mm) ? a.gauge_max_mm + ' mm / ' + (a.gauge_links || 11) + ' links' : '—')}${kv('Added', fmtDate(a.created_at))}
+  </div>${a.notes ? `<p style="margin-top:14px;white-space:pre-wrap" class="muted">${h(a.notes)}</p>` : ''}</section>
+  <div class="cols">
+    <section class="card"><h2>History (${logs.length})</h2>
+      ${logs.length ? `<ul class="tl">${logs.map(l => logItem(l, false)).join('')}</ul>` : '<p class="empty">No history yet.</p>'}
+    </section>
+    <div>
+      ${inspectionCard(a)}
+      ${partsFittedCard(a)}
+      <section class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Manuals</h2><span class="spacer"></span><button class="btn sm" data-act="manual-new" data-make="${h(a.make)}" data-model="${h(a.model)}">${ic('plus')} Add</button></div>
+        ${mans.length ? `<ul class="list">${mans.map(manualItem).join('')}</ul>` : `<p class="empty">No manuals for ${h(a.model || 'this model')}.</p>`}
+      </section>
+      ${isAdmin() ? `<button class="btn danger sm" data-act="asset-del" data-id="${a.id}">${ic('trash')} Delete motor</button>` : ''}
+    </div>
+  </div>`;
+}
+function logItem(l, showAsset) {
+  const a = showAsset ? assetById(l.asset_id) : null;
+  const canDel = isAdmin();
+  return `<li class="log k-${slug(l.kind)}"><div class="log-dot"></div><div>
+    <div class="log-top"><span class="kind">${h(l.kind)}</span><strong>${h(l.title)}</strong>${a ? `<a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span class="muted small">${h(a.model)}</span>` : ''}</div>
+    ${l.details ? `<p>${h(l.details)}</p>` : ''}
+    <div class="meta"><span>${fmtDT(l.created_at)}</span><span>· ${h(whoOf(l))}</span>${l.location ? `<span>· 📍 ${h(l.location)}</span>` : ''}${l.parts ? `<span>· Parts: ${h(l.parts)}</span>` : ''}${hasH(l.lamp_hours) ? `<span>· Lamp ${fmtH(l.lamp_hours)}</span>` : ''}${hasH(l.fixture_hours) ? `<span>· Fixture ${fmtH(l.fixture_hours)}</span>` : ''}${l.status_after ? `<span>·</span>${pill(l.status_after)}` : ''}</div>
+    ${l.photos?.length ? `<div class="thumbs">${l.photos.map(p => `<img class="thumb" alt="Photo" loading="lazy" decoding="async" data-bucket="photos" data-path="${h(p)}" data-act="photo-open" data-p="${h(p)}">`).join('')}</div>` : ''}
+  </div>${canDel && !showAsset ? `<button class="icon-btn" title="Delete entry" data-act="log-del" data-id="${l.id}">${ic('trash')}</button>` : '<span></span>'}</li>`;
+}
+function manualItem(m) {
+  return `<li>${ic('file')}<a href="#" data-act="manual-open" data-id="${m.id}" style="flex:1">${h(m.title)}</a><span class="muted small">${h(m.make)}${m.model ? ' ' + h(m.model) : ' (all)'}</span>${isAdmin() ? `<button class="icon-btn" title="Delete" data-act="manual-del" data-id="${m.id}">${ic('trash')}</button>` : ''}</li>`;
+}
+const imgCache = {};
+async function hydrateImages() {
+  await Promise.all([...document.querySelectorAll('img[data-path]')].map(async img => {
+    const key = img.dataset.bucket + ':' + img.dataset.path;
+    try { imgCache[key] = imgCache[key] || api.fileUrl(img.dataset.bucket, img.dataset.path); img.src = await imgCache[key]; } catch { delete imgCache[key]; }
+  }));
+}
+
+/* ---------- schedules ---------- */
+function vSchedules() {
+  const all = dueList(); const tab = S.dueTab;
+  const rows = tab === 'due' ? all.filter(d => d.state !== 'ok') : all;
+  return `<header class="page-h"><div><h1>Service schedule</h1><p class="muted">Recurring checks by model or by item — by days, run hours, or both.</p></div>
+    <div class="row"><button class="btn" data-act="export" data-what="due">${ic('download')} CSV</button><button class="btn primary" data-act="sched-new">${ic('plus')} Add schedule</button></div></header>
+  <section class="card">
+    <div class="row" style="margin-bottom:12px"><div class="tabs"><button class="${tab === 'due' ? 'on' : ''}" data-act="due-tab" data-tab="due">Overdue & due soon (${all.filter(d => d.state !== 'ok').length})</button><button class="${tab === 'all' ? 'on' : ''}" data-act="due-tab" data-tab="all">Everything (${all.length})</button></div></div>
+    ${rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Task</th><th>Status</th><th class="hide-m">When</th><th class="hide-m">Last done</th><th></th></tr></thead><tbody>
+      ${rows.map(d => `<tr><td><a href="#/asset/${d.a.id}" class="tag" style="text-decoration:none">${h(d.a.tag)}</a><div class="muted small">${h(d.a.model)}</div></td><td>${h(d.s.task)}</td><td>${duePill(d)}</td>
+        <td class="hide-m small">${dueText(d)}</td><td class="hide-m muted small">${d.last ? fmtDate(d.last.created_at) : 'Never'}</td>
+        <td style="text-align:right"><button class="btn sm" data-act="done" data-sid="${d.s.id}" data-aid="${d.a.id}">${ic('check')} Done</button></td></tr>`).join('')}
+    </tbody></table></div>` : `<p class="empty">${tab === 'due' ? 'Nothing due. All serviced.' : 'No schedules yet.'}</p>`}
+  </section>
+  <section class="card"><h2>Schedules (${S.schedules.length})</h2>
+    ${S.schedules.length ? `<ul class="list">${S.schedules.map(s => { const n = scheduleTargets(s).length; const a = s.asset_id && assetById(s.asset_id);
+      return `<li><div style="flex:1;min-width:180px"><strong>${h(s.task)}</strong><div class="muted small">${a ? 'Item ' + h(a.tag) : h(s.make) + ' ' + h(s.model) + ` · ${n} item${n === 1 ? '' : 's'}`}</div></div>
+      <span class="muted small">Every ${[s.interval_days ? s.interval_days + ' days' : '', s.interval_hours ? s.interval_hours + (s.hours_basis === 'fixture' ? ' fixture h' : ' lamp h') : ''].filter(Boolean).join(' or ')}</span>
+      ${isAdmin() ? `<button class="icon-btn" title="Delete schedule" data-act="sched-del" data-id="${s.id}">${ic('trash')}</button>` : ''}</li>`; }).join('')}</ul>` : '<p class="empty">Add a schedule like "Clean fans every 180 days" or "Lamp change every 1500 h".</p>'}
+  </section>`;
+}
+
+/* ---------- manuals ---------- */
+function vManuals() {
+  const q = norm(S.manualQ);
+  const list = S.manuals.filter(m => !q || [m.make, m.model, m.title].some(v => norm(v).includes(q)))
+    .sort((x, y) => (x.make + x.model + x.title).localeCompare(y.make + y.model + y.title));
+  return `<header class="page-h"><div><h1>Manuals</h1><p class="muted">Service manuals and docs, shown on every matching item.</p></div><button class="btn primary" data-act="manual-new">${ic('plus')} Add manual</button></header>
+  <section class="card">
+    <input data-filter="manualQ" placeholder="Search make, model or title…" value="${h(S.manualQ)}" style="margin-bottom:12px">
+    <div id="manual-list">${list.length ? `<ul class="list">${list.map(manualItem).join('')}</ul>` : '<p class="empty">No manuals yet. Upload a PDF or add a link.</p>'}</div>
+  </section>`;
+}
+
+/* ---------- reports ---------- */
+function costSection() {
+  const models = uniq(S.assets.map(a => a.model));
+  return `<section class="card" style="margin-top:16px"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Repair cost by light</h2><span class="spacer"></span>
+      <select data-cost-model style="width:auto;min-width:160px"><option value="">All models</option>${models.map(m => `<option ${costModel === m ? 'selected' : ''}>${h(m)}</option>`).join('')}</select>
+      <button class="btn sm" data-act="export" data-what="costs">${ic('download')} CSV</button></div>
+    <p class="muted small" style="margin-bottom:10px">Parts checked out to each light (at the price when taken) plus repairer bills. <b>Problem unit</b> = ${PROBLEM_FAULTS}+ faults in 12 months.</p>
+    <div id="cost-list">${costTable()}</div></section>
+  <section class="card"><h2>Repair cost by model</h2>${modelCostTable()}</section>`;
+}
+function vReports() {
+  const since = d => S.logs.filter(l => daysSince(l.created_at) <= d);
+  const count = (arr, k) => arr.filter(l => l.kind === k).length;
+  const m30 = since(30), m90 = since(90);
+  const today = new Date().toISOString().slice(0, 10), from = new Date(Date.now() - 90 * DAY).toISOString().slice(0, 10);
+  return `<header class="page-h"><div><h1>Reports</h1><p class="muted">Export for the office, clients or insurance.</p></div></header>
+  <div class="stats">
+    <div class="stat"><span class="muted small">Faults · 30 days</span><b>${count(m30, 'Fault')}</b></div>
+    <div class="stat"><span class="muted small">Repairs · 30 days</span><b>${count(m30, 'Repair')}</b></div>
+    <div class="stat"><span class="muted small">Inspections · 90 days</span><b>${S.inspections.filter(i => daysSince(i.inspected_on + 'T12:00:00') <= 90).length}</b></div>
+    <div class="stat"><span class="muted small">Faulty over ${CFG.FAULT_ALERT_DAYS} d</span><b>${longFaults().length}</b></div>
+  </div>
+  <div class="grid2">
+    <section class="card"><h2>Maintenance log</h2>
+      <form data-form="export-logs"><div class="fgrid"><div class="field"><label>From</label><input type="date" name="from" value="${from}"></div><div class="field"><label>To</label><input type="date" name="to" value="${today}"></div></div>
+      <button class="btn">${ic('download')} Download CSV</button></form></section>
+    <section class="card"><h2>Faults</h2><p class="muted small" style="margin-bottom:14px">Everything currently faulty, in repair or out of service, with how long and the latest note.</p>
+      <div class="row"><button class="btn" data-act="print-faults">${ic('print')} Fault report (PDF)</button><button class="btn" data-act="export" data-what="faults">${ic('download')} CSV</button></div></section>
+    <section class="card"><h2>Motor list</h2><p class="muted small" style="margin-bottom:14px">Every motor with WLL, status, next inspection and location.</p><button class="btn" data-act="export" data-what="inventory">${ic('download')} Download CSV</button></section>
+    <section class="card"><h2>Inspection register</h2><p class="muted small" style="margin-bottom:14px">Every inspection and load test: date, inspector, results, chain wear, test load.</p><div class="row"><button class="btn" data-act="export" data-what="register">${ic('download')} CSV</button><button class="btn" data-act="print-register">${ic('print')} Print</button></div></section>
+    <section class="card"><h2>Due list</h2><p class="muted small" style="margin-bottom:14px">Every motor's next periodic inspection and load test.</p><button class="btn" data-act="export" data-what="due">${ic('download')} Download CSV</button></section>
+  </div>`;
+}
+
+/* ---------- team ---------- */
+function vTeam() {
+  const ps = [...S.profiles].sort((a, b) => (a.role === 'pending' ? -1 : 0) - (b.role === 'pending' ? -1 : 0) || String(a.name).localeCompare(String(b.name)));
+  return `<header class="page-h"><div><h1>Team</h1><p class="muted">${isAdmin() ? 'New people create an account from the sign-in page, then show up here as Pending for you to approve.' : 'People with access to this log.'}</p></div></header>
+  <section class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th class="hide-m">Email</th><th>Access</th><th class="hide-m">Joined</th></tr></thead><tbody>
+  ${ps.map(p => `<tr><td>${h(p.name)}${p.id === S.user.id ? ' <span class="muted small">(you)</span>' : ''}</td><td class="hide-m muted">${h(p.email)}</td>
+    <td>${isAdmin() && p.id !== S.user.id ? `<select data-role-for="${p.id}" style="width:auto;min-width:140px">${[['pending','Pending'],['tech','Technician'],['admin','Admin']].map(([v, l]) => `<option value="${v}" ${p.role === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`
+      : `<span class="pill ${p.role === 'pending' ? 'd-soon' : 'd-ok'}">${p.role === 'admin' ? 'Admin' : p.role === 'tech' ? 'Technician' : 'Pending'}</span>`}</td>
+    <td class="hide-m muted small">${fmtDate(p.created_at)}</td></tr>`).join('')}
+  </tbody></table></div></section>
+  <section class="card"><h2>Roles</h2><ul class="list small">
+    <li><strong style="width:100px">Technician</strong><span class="muted">Scan, add and edit items, log faults/repairs/services, add schedules and manuals.</span></li>
+    <li><strong style="width:100px">Admin</strong><span class="muted">Everything above, plus approve people and delete items, entries, schedules and manuals.</span></li></ul></section>`;
+}
+
+/* ---------- spare parts ---------- */
+const money = v => hasH(v) ? '$' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+const isLow = pt => pt.quantity === 0 || (pt.min_qty > 0 && pt.quantity <= pt.min_qty);
+const partById = id => S.parts.find(x => x.id === id);
+const qtyPill = pt => `<span class="pill ${pt.quantity === 0 ? 's-faulty' : isLow(pt) ? 's-in-repair' : 's-ok'}">${pt.quantity}${pt.quantity === 0 ? ' · out' : isLow(pt) ? ' · low' : ''}</span>`;
+const MOVE = { checkout: 'Checked out', restock: 'Stock added', return: 'Returned', adjust: 'Count corrected' };
+const people = () => uniq([...S.profiles.filter(p => p.role !== 'pending').map(p => p.name), ...S.logs.map(l => l.tech_name), ...S.part_moves.map(m => m.person_name)]);
+function findAsset(t) {
+  t = String(t || '').trim(); if (!t) return null;
+  return S.assets.find(x => norm(x.tag) === norm(t)) || S.assets.find(x => x.serial && norm(x.serial) === norm(t)) || S.assets.find(x => codeKey(x.tag) === codeKey(t));
+}
+function partsMissingNote() {
+  return S.partsMissing ? `<div class="alert warn"><div class="alert-h">${ic('alert')} Spare parts isn't set up in the database yet</div><p class="small">Run <b>rigready-parts.sql</b> in Supabase → SQL Editor, then tap Refresh.</p></div>` : '';
+}
+function filteredParts() {
+  const q = norm(S.partQ);
+  return S.parts.filter(pt => (!S.partMake || pt.make === S.partMake) && (!q || [pt.name, pt.make, pt.part_number, pt.supplier_code, pt.fits, pt.location].some(v => norm(v).includes(q))))
+    .sort((a, b) => String(a.make || '').localeCompare(String(b.make || '')) || a.name.localeCompare(b.name));
+}
+function partTable() {
+  const rows = filteredParts();
+  if (!rows.length) return `<p class="empty">${S.parts.length ? 'No parts match.' : 'No parts yet.'}</p>`;
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Part</th><th class="hide-m">Make</th><th class="hide-m">Codes</th><th>In stock</th><th class="hide-m">Price</th><th></th></tr></thead><tbody>
+  ${rows.map(pt => `<tr class="click" data-act="go" data-href="#/part/${pt.id}"><td><div>${h(pt.name)}</div>${pt.fits ? `<div class="muted small">Fits ${h(pt.fits)}</div>` : ''}</td>
+    <td class="hide-m">${h(pt.make || '—')}</td><td class="hide-m mono small">${[pt.supplier_code, pt.part_number].filter(Boolean).map(h).join('<br>') || '—'}</td>
+    <td>${qtyPill(pt)}</td><td class="hide-m">${money(pt.unit_price)}</td>
+    <td style="text-align:right"><button class="btn sm" data-act="checkout" data-pid="${pt.id}" ${pt.quantity ? '' : 'disabled'}>Check out</button></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function moveRow(m, showPart) {
+  const pt = partById(m.part_id), a = m.asset_id && assetById(m.asset_id);
+  const canReturn = m.kind === 'checkout' && !S.part_moves.some(x => x.kind === 'return' && x.notes === 'Return of ' + m.id);
+  return `<tr><td class="small">${fmtDT(m.created_at)}</td>${showPart ? `<td>${pt ? `<a href="#/part/${pt.id}" style="text-decoration:none">${h(pt.name)}</a>` : '—'}</td>` : `<td>${h(MOVE[m.kind] || m.kind)}</td>`}
+    <td><b style="color:${m.change < 0 ? 'var(--bad)' : 'var(--ok)'}">${m.change > 0 ? '+' : ''}${m.change}</b></td>
+    <td>${h(m.person_name || (m.kind === 'checkout' ? '—' : nameOf(m.created_by)))}</td>
+    <td>${a ? `<a href="#/asset/${a.id}" class="tag" style="text-decoration:none">${h(a.tag)}</a>` : '<span class="muted">—</span>'}</td>
+    <td class="hide-m muted small">${h(m.notes && !m.notes.startsWith('Return of ') ? m.notes : '')}</td>
+    <td style="text-align:right;white-space:nowrap">${!showPart && canReturn ? `<button class="btn sm" data-act="part-return" data-id="${m.id}" title="Part came back unused">Return</button>` : ''}${!showPart && isAdmin() ? `<button class="icon-btn" title="Undo (fixes a mistake, restores stock)" data-act="move-del" data-id="${m.id}">${ic('trash')}</button>` : ''}</td></tr>`;
+}
+function vParts() {
+  const units = S.parts.reduce((n, pt) => n + pt.quantity, 0);
+  const value = S.parts.reduce((n, pt) => n + (hasH(pt.unit_price) ? pt.quantity * pt.unit_price : 0), 0);
+  const low = S.parts.filter(isLow).length;
+  const outs = S.part_moves.filter(m => m.kind === 'checkout').sort(byNewest).slice(0, 15);
+  const makes = uniq(S.parts.map(pt => pt.make));
+  return `<header class="page-h"><div><h1>Spare parts</h1><p class="muted">Stock, prices and who took what for which motor.</p></div>
+    <div class="row"><button class="btn" data-act="export" data-what="parts">${ic('download')} CSV</button><button class="btn" data-act="part-new">${ic('plus')} Add part</button><button class="btn" data-act="order-list">${ic('file')} Order list</button><button class="btn primary" data-act="checkout">${ic('parts')} Check out</button></div></header>
+  ${partsMissingNote()}
+  <div class="stats">
+    <div class="stat"><span class="muted small">Parts listed</span><b>${S.parts.length}</b></div>
+    <div class="stat"><span class="muted small">Units in stock</span><b>${units}</b></div>
+    <div class="stat"><span class="muted small">Stock value (priced items)</span><b>${money(value)}</b></div>
+    <div class="stat ${low ? 'warn' : ''}"><span class="muted small">Low or out of stock</span><b>${low}</b></div>
+  </div>
+  <section class="card">
+    <div class="filters" style="grid-template-columns:1fr 200px"><input data-filter="partQ" placeholder="Search part, code, make, what it fits…" value="${h(S.partQ)}">
+      <select data-filter="partMake"><option value="">All makes</option>${makes.map(m => `<option ${S.partMake === m ? 'selected' : ''}>${h(m)}</option>`).join('')}</select></div>
+    <div id="part-list">${partTable()}</div>
+  </section>
+  <section class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Recent check-outs</h2><span class="spacer"></span><button class="btn sm" data-act="export" data-what="moves">${ic('download')} All movements CSV</button></div>
+    ${outs.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Part</th><th>Qty</th><th>Taken by</th><th>Motor</th><th class="hide-m">Notes</th><th></th></tr></thead><tbody>${outs.map(m => moveRow(m, true)).join('')}</tbody></table></div>` : '<p class="empty">Nothing checked out yet.</p>'}
+  </section>`;
+}
+function vPart(id) {
+  const pt = partById(id);
+  if (!pt) return `<p class="empty">Part not found. <a href="#/parts">Back to spare parts</a></p>`;
+  const moves = S.part_moves.filter(m => m.part_id === id).sort(byNewest);
+  const kv = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
+  return `<p class="small" style="margin-bottom:10px"><a href="#/parts" class="muted" style="text-decoration:none">← Spare parts</a></p>
+  <div class="a-head"><div><h1>${h(pt.name)}</h1><div class="row" style="margin-top:8px">${qtyPill(pt)}<span class="muted small">in stock</span></div></div>
+    <div class="row"><button class="btn primary" data-act="checkout" data-pid="${pt.id}" ${pt.quantity ? '' : 'disabled'}>${ic('parts')} Check out</button>
+      <button class="btn" data-act="restock" data-id="${pt.id}">${ic('plus')} Add stock</button><button class="btn" data-act="part-edit" data-id="${pt.id}">${ic('edit')} Edit</button></div></div>
+  <section class="card"><div class="kv">
+    ${kv('Make', h(pt.make || '—'))}${kv('Supplier code', `<span class="mono">${h(pt.supplier_code || '—')}</span>`)}${kv('Part number', `<span class="mono">${h(pt.part_number || '—')}</span>`)}${kv('Fits', h(pt.fits || '—'))}
+    ${kv('Price each', money(pt.unit_price))}${kv('Stock value', hasH(pt.unit_price) ? money(pt.quantity * pt.unit_price) : '—')}${kv('Condition', h(pt.condition || '—'))}${kv('Location', h(pt.location || '—'))}
+    ${kv('Low-stock alert at', pt.min_qty ? pt.min_qty : 'Off')}
+  </div>${pt.notes ? `<p style="margin-top:14px;white-space:pre-wrap" class="muted">${h(pt.notes)}</p>` : ''}</section>
+  <section class="card"><h2>Stock history (${moves.length})</h2>
+    ${moves.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>What</th><th>Qty</th><th>Person</th><th>Motor</th><th class="hide-m">Notes</th><th></th></tr></thead><tbody>${moves.map(m => moveRow(m, false)).join('')}</tbody></table></div>` : '<p class="empty">No movements yet.</p>'}
+  </section>
+  ${isAdmin() ? `<button class="btn danger sm" data-act="part-del" data-id="${pt.id}">${ic('trash')} Delete part</button>` : ''}`;
+}
+function partsFittedCard(a) {
+  if (S.partsMissing) return '';
+  const ms = movesFor(a.id).filter(m => m.kind === 'checkout').sort(byNewest);
+  return `<section class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Parts fitted</h2><span class="spacer"></span><button class="btn sm" data-act="checkout" data-tag="${h(a.tag)}">${ic('plus')} Check out part</button></div>
+    ${ms.length ? `<ul class="list">${ms.map(m => { const pt = partById(m.part_id); return `<li><div style="flex:1;min-width:150px"><a href="#/part/${m.part_id}" style="text-decoration:none">${h(pt?.name || 'Part')}</a> <b>×${-m.change}</b><div class="muted small">${fmtDate(m.created_at)} · ${h(m.person_name || '—')}</div></div></li>`; }).join('')}</ul>` : '<p class="empty">No parts checked out for this motor.</p>'}
+  </section>`;
+}
+const peopleList = () => `<datalist id="dl-people">${people().map(n => `<option value="${h(n)}">`).join('')}</datalist>`;
+function checkoutModal(d = {}) {
+  if (S.partsMissing) return toast('Run rigready-parts.sql in Supabase first', 'bad');
+  const pt = d.pid && partById(d.pid);
+  const choices = [...S.parts].sort((a, b) => String(a.make || '').localeCompare(String(b.make || '')) || a.name.localeCompare(b.name));
+  openModal('Check out part', `<form data-form="checkout">${datalists()}${peopleList()}
+    <div class="field"><label>Part</label>${pt ? `<input type="hidden" name="part_id" value="${pt.id}"><div class="note" style="margin:0">${h(pt.name)} <span class="muted">· ${pt.quantity} in stock</span></div>`
+      : `<select name="part_id" required><option value="">Choose a part…</option>${choices.map(x => `<option value="${x.id}" ${x.quantity ? '' : 'disabled'}>${h(x.make ? x.make + ' — ' : '')}${h(x.name)} (${x.quantity} in stock)</option>`).join('')}</select>`}</div>
+    <div class="fgrid">
+      <div class="field"><label>Quantity</label><input name="qty" type="number" min="1" step="1" ${pt ? `max="${pt.quantity}"` : ''} value="1" required inputmode="numeric"></div>
+      <div class="field"><label>Taken by</label><input name="person" list="dl-people" required value="${h(S.profile.name)}" autocomplete="off"></div>
+      <div class="field full"><label>Motor it's going into (tag, serial or scan code)</label><input name="tag" list="dl-tag" required value="${h(d.tag || '')}" placeholder="e.g. CM 07" autocomplete="off"></div>
+      <div class="field full"><label>Notes (optional)</label><input name="notes" placeholder="e.g. Replacing worn brake"></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Check out</button></div></form>`);
+}
+async function submitCheckout(f) {
+  const fd = new FormData(f); const pt = partById(fd.get('part_id'));
+  if (!pt) throw new Error('Choose a part.');
+  const qty = parseInt(fd.get('qty'), 10);
+  if (!(qty > 0)) throw new Error('Quantity must be at least 1.');
+  if (qty > pt.quantity) throw new Error(`Only ${pt.quantity} in stock.`);
+  const a = findAsset(fd.get('tag')); if (!a) throw new Error('No motor with that tag or serial — check it and try again.');
+  const person = fd.get('person').trim(); if (!person) throw new Error('Who is taking it?');
+  const prof = S.profiles.find(x => norm(x.name) === norm(person));
+  const m = await api.insert('part_moves', { part_id: pt.id, change: -qty, kind: 'checkout', unit_price: pt.unit_price ?? null, person_name: person, person_id: prof?.id || null, asset_id: a.id, notes: fd.get('notes').trim(), created_by: S.user.id });
+  S.part_moves.unshift(m); pt.quantity -= qty;
+  toast(`${qty} × ${pt.name} checked out to ${person} for ${a.tag}`); closeModal(); render();
+}
+function restockModal(pt) {
+  openModal('Add stock — ' + pt.name, `<form data-form="restock"><input type="hidden" name="part_id" value="${pt.id}">
+    <div class="fgrid"><div class="field"><label>Quantity received</label><input name="qty" type="number" min="1" step="1" value="1" required inputmode="numeric"></div>
+      <div class="field"><label>Price each (optional)</label><input name="price" type="number" min="0" step="0.01" value="${h(pt.unit_price ?? '')}" inputmode="decimal"></div>
+      <div class="field full"><label>Notes (optional)</label><input name="notes" placeholder="e.g. ShowTech order, invoice number"></div></div>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Add stock</button></div></form>`);
+}
+async function submitRestock(f) {
+  const fd = new FormData(f); const pt = partById(fd.get('part_id')); const qty = parseInt(fd.get('qty'), 10);
+  if (!(qty > 0)) throw new Error('Quantity must be at least 1.');
+  const m = await api.insert('part_moves', { part_id: pt.id, change: qty, kind: 'restock', notes: fd.get('notes').trim(), created_by: S.user.id });
+  S.part_moves.unshift(m); pt.quantity += qty;
+  const price = numOrNull(fd.get('price'));
+  if (price != null && price !== Number(pt.unit_price)) Object.assign(pt, await api.update('parts', pt.id, { unit_price: price, updated_at: new Date().toISOString() }));
+  toast(`Added ${qty}`); closeModal(); render();
+}
+async function returnPart(id) {
+  const m = S.part_moves.find(x => x.id === id); const pt = m && partById(m.part_id); if (!pt) return;
+  if (!confirm(`Return ${-m.change} × ${pt.name} to stock (came back unused)?`)) return;
+  try {
+    const r = await api.insert('part_moves', { part_id: pt.id, change: -m.change, kind: 'return', unit_price: m.unit_price ?? null, person_name: m.person_name, asset_id: m.asset_id, notes: 'Return of ' + m.id, created_by: S.user.id });
+    S.part_moves.unshift(r); pt.quantity += -m.change; toast('Returned to stock'); render();
+  } catch (e) { toast(errMsg(e), 'bad'); }
+}
+async function undoMove(id) {
+  const m = S.part_moves.find(x => x.id === id); const pt = m && partById(m.part_id); if (!pt) return;
+  if (!confirm('Undo this entry? Use this only to fix a mistake — stock goes back to what it was before it.')) return;
+  try { await api.remove('part_moves', id); S.part_moves = S.part_moves.filter(x => x.id !== id); pt.quantity -= m.change; toast('Undone'); render(); }
+  catch (e) { toast(errMsg(e), 'bad'); }
+}
+function partModal(pt) {
+  const v = pt || { condition: 'New' };
+  openModal(pt ? 'Edit part' : 'Add part', `<form data-form="part">${datalists()}<input type="hidden" name="id" value="${h(pt?.id || '')}">
+    <div class="fgrid">
+      <div class="field full"><label>Part name</label><input name="name" required value="${h(v.name)}" placeholder="e.g. Lodestar brake kit"></div>
+      <div class="field"><label>Make</label><input name="make" list="dl-make" value="${h(v.make)}"></div>
+      <div class="field"><label>Fits (models)</label><input name="fits" list="dl-model" value="${h(v.fits)}" placeholder="e.g. Lodestar 1 t"></div>
+      <div class="field"><label>Supplier code (e.g. ShowTech)</label><input name="supplier_code" class="mono" value="${h(v.supplier_code)}"></div>
+      <div class="field"><label>Manufacturer part number</label><input name="part_number" class="mono" value="${h(v.part_number)}"></div>
+      <div class="field"><label>${pt ? 'Quantity on hand (stock count)' : 'Starting quantity'}</label><input name="quantity" type="number" min="0" step="1" required value="${h(v.quantity ?? 0)}" inputmode="numeric"></div>
+      <div class="field"><label>Price each ($)</label><input name="unit_price" type="number" min="0" step="0.01" value="${h(v.unit_price ?? '')}" inputmode="decimal"></div>
+      <div class="field"><label>Condition</label><input name="condition" list="dl-cond" value="${h(v.condition)}"><datalist id="dl-cond"><option value="New"><option value="Used"></datalist></div>
+      <div class="field"><label>Low-stock alert at (0 = off)</label><input name="min_qty" type="number" min="0" step="1" value="${h(v.min_qty ?? 0)}" inputmode="numeric"></div>
+      <div class="field full"><label>Location</label><input name="location" value="${h(v.location)}" placeholder="e.g. Parts shelf B, bin 4"></div>
+      <div class="field full"><label>Notes</label><textarea name="notes">${h(v.notes)}</textarea></div>
+    </div>
+    ${pt ? '<p class="muted small" style="margin-bottom:12px">Changing the quantity here is recorded as a stock-count correction. Use Check out / Add stock for normal movements.</p>' : ''}
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">${pt ? 'Save' : 'Add part'}</button></div></form>`);
+}
+async function submitPart(f) {
+  const fd = Object.fromEntries(new FormData(f)); const id = fd.id;
+  const row = { name: fd.name.trim(), make: fd.make.trim(), fits: fd.fits.trim(), supplier_code: fd.supplier_code.trim(), part_number: fd.part_number.trim(),
+    unit_price: numOrNull(fd.unit_price), condition: fd.condition.trim(), min_qty: parseInt(fd.min_qty || '0', 10) || 0, location: fd.location.trim(), notes: fd.notes.trim(), updated_at: new Date().toISOString() };
+  const qty = parseInt(fd.quantity || '0', 10) || 0;
+  let pt;
+  if (id) {
+    pt = partById(id); Object.assign(pt, await api.update('parts', id, row));
+    if (qty !== pt.quantity) { const m = await api.insert('part_moves', { part_id: id, change: qty - pt.quantity, kind: 'adjust', notes: 'Stock count corrected', created_by: S.user.id }); S.part_moves.unshift(m); pt.quantity = qty; }
+  } else {
+    pt = await api.insert('parts', { ...row, quantity: 0 }); S.parts.push(pt);
+    if (qty > 0) { const m = await api.insert('part_moves', { part_id: pt.id, change: qty, kind: 'restock', notes: 'Starting stock', created_by: S.user.id }); S.part_moves.unshift(m); pt.quantity = qty; }
+  }
+  toast(id ? 'Saved' : 'Part added'); closeModal(); location.hash = '#/part/' + pt.id; render();
+}
+
+/* ---------- repairs sent away (ShowTech etc.) ---------- */
+const REPAIR_OVERDUE_DAYS = CFG.REPAIR_OVERDUE_DAYS || 30;   // flag when no expected-back date and away longer than this
+const jobsFor = id => idx().jobs.get(id) || [];
+const openJob = id => jobsFor(id).find(j => !j.returned_at);
+const openJobs = () => S.repair_jobs.filter(j => !j.returned_at && assetById(j.asset_id));
+const isoDay = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const daysAway = j => Math.max(0, Math.floor((Date.now() - new Date(j.sent_at + 'T00:00:00')) / DAY));
+function jobOverdue(j) {
+  if (j.returned_at) return false;
+  if (j.expected_back) return isoDay() > j.expected_back;
+  return daysAway(j) > REPAIR_OVERDUE_DAYS;
+}
+const fmtDay = d => d ? fmtDate(d + 'T12:00:00') : '—';
+function apill(a) {
+  const j = S.repairsMissing ? null : openJob(a.id);
+  return j ? `<span class="pill s-away" title="${h(a.status)}">At ${h(j.repairer)}${jobOverdue(j) ? ' · overdue' : ''}</span>` : pill(a.status);
+}
+const repairers = () => uniq(['ShowTech', ...S.repair_jobs.map(j => j.repairer)]);
+function repairsMissingNote() {
+  return S.repairsMissing ? `<div class="alert warn"><div class="alert-h">${ic('alert')} Repair tracking isn't set up in the database yet</div><p class="small">Ask Claude to apply the repair-tracking update, then tap Refresh.</p></div>` : '';
+}
+function sendModal(aid) {
+  if (S.repairsMissing) return toast('Repair tracking isn\'t set up in the database yet', 'bad');
+  const a = assetById(aid); if (!a) return;
+  const lastFault = logsFor(a.id).find(l => l.kind === 'Fault');
+  const back = new Date(Date.now() + 21 * DAY);
+  openModal(`Send for repair — ${a.tag}`, `<form data-form="send-repair"><input type="hidden" name="asset_id" value="${a.id}">
+    <datalist id="dl-repairers">${repairers().map(r => `<option value="${h(r)}">`).join('')}</datalist>
+    <div class="fgrid">
+      <div class="field"><label>Sent to</label><input name="repairer" list="dl-repairers" required value="ShowTech" autocomplete="off"></div>
+      <div class="field"><label>Their job / RMA number</label><input name="job_no" class="mono" placeholder="If you have one"></div>
+      <div class="field full"><label>Fault</label><input name="fault" required value="${h(lastFault?.title || '')}" placeholder="What's wrong with it"></div>
+      <div class="field"><label>Date sent</label><input name="sent_at" type="date" required value="${isoDay()}"></div>
+      <div class="field"><label>Expected back</label><input name="expected_back" type="date" value="${isoDay(back)}"></div>
+      <div class="field full"><label>Notes (optional)</label><input name="notes" placeholder="e.g. Sent with case, quote requested"></div>
+    </div>
+    <p class="muted small" style="margin-bottom:12px">It shows as "At ShowTech" (or wherever it went) until you mark it back, and gets flagged if it's not back by the expected date.</p>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Send for repair</button></div></form>`);
+}
+async function submitSend(f) {
+  const fd = new FormData(f); const a = assetById(fd.get('asset_id'));
+  if (openJob(a.id)) throw new Error('This light is already away for repair.');
+  const repairer = fd.get('repairer').trim(), job_no = fd.get('job_no').trim(), fault = fd.get('fault').trim();
+  if (!repairer || !fault) throw new Error('Fill in where it went and the fault.');
+  const job = await api.insert('repair_jobs', { asset_id: a.id, repairer, job_no: job_no || null, fault, sent_at: fd.get('sent_at'), expected_back: fd.get('expected_back') || null, notes: fd.get('notes').trim() || null, created_by: S.user.id });
+  S.repair_jobs.unshift(job);
+  const patch = { location: repairer, updated_at: new Date().toISOString(), updated_by: S.user.id };
+  if (!BAD.includes(a.status)) Object.assign(patch, statusPatch(a, 'In repair'));
+  else if (a.status === 'Faulty') patch.status = 'In repair';
+  Object.assign(a, await api.update('assets', a.id, patch));
+  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: 'Note', title: `Sent to ${repairer}${job_no ? ' (job ' + job_no + ')' : ''}`, details: fault + (job.expected_back ? `\nExpected back ${fmtDay(job.expected_back)}` : ''), location: repairer, photos: [], status_after: a.status, created_by: S.user.id }));
+  toast(`${a.tag} sent to ${repairer}`); closeModal(); render();
+}
+function returnModal(jid) {
+  const j = S.repair_jobs.find(x => x.id === jid); const a = j && assetById(j.asset_id); if (!a) return;
+  openModal(`Back from ${j.repairer} — ${a.tag}`, `<form data-form="return-repair">${datalists()}<input type="hidden" name="id" value="${j.id}">
+    <div class="note">${h(j.fault || '')}${j.job_no ? ` · job <span class="mono">${h(j.job_no)}</span>` : ''} · sent ${fmtDay(j.sent_at)} (${daysAway(j)} days ago)</div>
+    <div class="fgrid">
+      <div class="field"><label>Date back</label><input name="returned_at" type="date" required value="${isoDay()}"></div>
+      <div class="field"><label>Outcome</label><select name="outcome" required><option>Fixed</option><option>Still faulty</option><option>Written off</option></select></div>
+      <div class="field"><label>Repair cost ($, ex GST)</label><input name="cost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="From the invoice"></div>
+      <div class="field"><label>Where is it now?</label><input name="location" list="dl-loc" required placeholder="e.g. Rack 3, Repair bench" autocomplete="off"></div>
+      <div class="field full"><label>What they did</label><input name="notes" required placeholder="e.g. Replaced main PCB, firmware updated"></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Mark returned</button></div></form>`);
+}
+async function submitReturn(f) {
+  const fd = new FormData(f); const j = S.repair_jobs.find(x => x.id === fd.get('id')); const a = assetById(j.asset_id);
+  const outcome = fd.get('outcome'), cost = numOrNull(fd.get('cost')), notes = fd.get('notes').trim(), location = fd.get('location').trim();
+  if (!notes || !location) throw new Error('Fill in what they did and where it is now.');
+  Object.assign(j, await api.update('repair_jobs', j.id, { returned_at: fd.get('returned_at'), outcome, cost, notes: [j.notes, notes].filter(Boolean).join('\n') }));
+  const st = outcome === 'Fixed' ? 'OK' : outcome === 'Written off' ? 'Retired' : 'Faulty';
+  Object.assign(a, await api.update('assets', a.id, { ...statusPatch(a, st), location, updated_at: new Date().toISOString(), updated_by: S.user.id }));
+  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: outcome === 'Fixed' ? 'Repair' : outcome === 'Still faulty' ? 'Fault' : 'Note',
+    title: `Back from ${j.repairer}: ${outcome.toLowerCase()}`, details: notes + (j.job_no ? `\nJob ${j.job_no}` : '') + (cost != null ? `\nRepair cost ${money(cost)}` : ''),
+    location, photos: [], status_after: st, created_by: S.user.id }));
+  toast(`${a.tag} marked returned`); closeModal(); render();
+}
+function awayRows(list, done) {
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Light</th><th>Sent to</th><th class="hide-m">Fault</th><th>${done ? 'Back' : 'Away'}</th><th class="hide-m">${done ? 'Outcome' : 'Expected back'}</th>${done ? '<th class="hide-m">Cost</th>' : ''}<th></th></tr></thead><tbody>
+  ${list.map(j => { const a = assetById(j.asset_id); return `<tr><td><a href="#/asset/${a.id}" class="tag" style="text-decoration:none">${h(a.tag)}</a><div class="muted small">${h(a.model)}</div></td>
+    <td>${h(j.repairer)}${j.job_no ? `<div class="muted small mono">${h(j.job_no)}</div>` : ''}</td><td class="hide-m small">${h(j.fault || '')}</td>
+    ${done ? `<td class="small">${fmtDay(j.returned_at)}</td><td class="hide-m small">${h(j.outcome || '')}</td><td class="hide-m">${money(j.cost)}</td><td></td>`
+      : `<td><b>${daysAway(j)} d</b>${jobOverdue(j) ? ' <span class="pill d-overdue">Overdue</span>' : ''}<div class="muted small">since ${fmtDay(j.sent_at)}</div></td><td class="hide-m small">${fmtDay(j.expected_back)}</td>
+         <td style="text-align:right"><button class="btn sm" data-act="repair-return" data-id="${j.id}">${ic('check')} Back</button></td>`}</tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function vRepairs() {
+  const open = openJobs().sort((x, y) => (jobOverdue(y) - jobOverdue(x)) || x.sent_at.localeCompare(y.sent_at));
+  const back = S.repair_jobs.filter(j => j.returned_at && assetById(j.asset_id) && daysSince(j.returned_at + 'T12:00:00') <= 180).sort((x, y) => y.returned_at.localeCompare(x.returned_at));
+  const over = open.filter(jobOverdue).length, spent = back.reduce((n, j) => n + (Number(j.cost) || 0), 0);
+  return `<header class="page-h"><div><h1>Away for repair</h1><p class="muted">Lights at ShowTech or other repairers. Send one from its page with <b>Send for repair</b>.</p></div>
+    <button class="btn" data-act="export" data-what="repairs">${ic('download')} CSV</button></header>
+  ${repairsMissingNote()}
+  <div class="stats">
+    <div class="stat"><span class="muted small">Away now</span><b>${open.length}</b></div>
+    <div class="stat ${over ? 'bad' : ''}"><span class="muted small">Overdue back</span><b>${over}</b></div>
+    <div class="stat"><span class="muted small">Back · last 6 months</span><b>${back.length}</b></div>
+    <div class="stat"><span class="muted small">Repair bills · 6 months</span><b>${money(spent)}</b></div>
+  </div>
+  <section class="card"><h2>Away now</h2>${open.length ? awayRows(open, false) : '<p class="empty">Nothing away for repair.</p>'}</section>
+  <section class="card"><h2>Back in the last 6 months</h2>${back.length ? awayRows(back, true) : '<p class="empty">Nothing returned yet.</p>'}</section>`;
+}
+function awayCard() {
+  const open = openJobs(); if (!open.length) return '';
+  const over = open.filter(jobOverdue);
+  const list = [...open].sort((x, y) => (jobOverdue(y) - jobOverdue(x)) || x.sent_at.localeCompare(y.sent_at)).slice(0, 6);
+  return `<section class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Away for repair (${open.length})</h2>${over.length ? `<span class="pill d-overdue">${over.length} overdue</span>` : ''}<span class="spacer"></span><a href="#/repairs" class="small muted">See all →</a></div>
+    <ul class="list">${list.map(j => { const a = assetById(j.asset_id); return `<li><a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span>${h(j.repairer)}</span><span class="spacer"></span><b class="small">${daysAway(j)} d</b>${jobOverdue(j) ? '<span class="pill d-overdue">Overdue</span>' : ''}<div class="muted small" style="width:100%">${h(j.fault || '')}${j.job_no ? ' · job ' + h(j.job_no) : ''}</div></li>`; }).join('')}</ul></section>`;
+}
+function repairCard(a) {
+  if (S.repairsMissing) return '';
+  const js = jobsFor(a.id);
+  if (!js.length) return '';
+  return `<section class="card"><h2>Repairs sent away (${js.length})</h2><ul class="list">${js.map(j => `<li><div style="flex:1;min-width:150px"><div>${h(j.repairer)}${j.job_no ? ` · <span class="mono small">${h(j.job_no)}</span>` : ''}</div>
+    <div class="muted small">${fmtDay(j.sent_at)} → ${j.returned_at ? fmtDay(j.returned_at) + ' · ' + h(j.outcome || '') : 'still away (' + daysAway(j) + ' d)'}${j.cost != null ? ' · ' + money(j.cost) : ''}</div></div>
+    ${j.returned_at ? '' : `<button class="btn sm" data-act="repair-return" data-id="${j.id}">Back</button>`}</li>`).join('')}</ul></section>`;
+}
+
+/* ---------- repair cost per light ---------- */
+function costOf(a) {
+  let parts = 0, partsQty = 0, unpriced = 0;
+  for (const m of movesFor(a.id)) {
+    if (m.kind !== 'checkout' && m.kind !== 'return') continue;
+    const price = hasH(m.unit_price) ? Number(m.unit_price) : hasH(partById(m.part_id)?.unit_price) ? Number(partById(m.part_id).unit_price) : null;
+    const qty = -m.change;
+    partsQty += qty;
+    if (price == null) { if (m.kind === 'checkout') unpriced += qty; continue; }
+    parts += qty * price;
+  }
+  const js = jobsFor(a.id), repairs = js.reduce((n, j) => n + (Number(j.cost) || 0), 0);
+  const ls = logsFor(a.id), faults = ls.filter(l => l.kind === 'Fault').length;
+  const faults12 = ls.filter(l => l.kind === 'Fault' && daysSince(l.created_at) <= 365).length;
+  return { parts, partsQty, unpriced, repairs, jobs: js.length, total: parts + repairs, faults, faults12 };
+}
+const PROBLEM_FAULTS = 3;   // faults in 12 months that flag a "problem unit"
+function costCard(a) {
+  const c = costOf(a);
+  if (!c.faults && !c.partsQty && !c.jobs) return '';
+  return `<section class="card"><h2>Repair cost</h2><div class="kv" style="grid-template-columns:1fr 1fr">
+    <div><span>Parts fitted</span><b>${money(c.parts)}</b><div class="muted small">${c.partsQty} part${c.partsQty === 1 ? '' : 's'}${c.unpriced ? ` · ${c.unpriced} with no price` : ''}</div></div>
+    <div><span>Repairer bills</span><b>${money(c.repairs)}</b><div class="muted small">${c.jobs} job${c.jobs === 1 ? '' : 's'}</div></div>
+    <div><span>Total spent</span><b>${money(c.total)}</b></div>
+    <div><span>Faults logged</span><b>${c.faults}</b><div class="muted small">${c.faults12} in the last 12 months${c.faults12 >= PROBLEM_FAULTS ? ' · <span style="color:var(--bad)">problem unit</span>' : ''}</div></div>
+  </div></section>`;
+}
+let costModel = '';
+function costRows() {
+  return S.assets.filter(a => !costModel || a.model === costModel).map(a => ({ a, ...costOf(a) }))
+    .filter(r => r.total || r.faults).sort((x, y) => y.total - x.total || y.faults12 - x.faults12 || y.faults - x.faults);
+}
+function costTable() {
+  const rows = costRows().slice(0, 20);
+  if (!rows.length) return '<p class="empty">No repair costs or faults yet.</p>';
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Light</th><th>Total</th><th class="hide-m">Parts</th><th class="hide-m">Repairer</th><th>Faults</th></tr></thead><tbody>
+  ${rows.map(r => `<tr class="click" data-act="go" data-href="#/asset/${r.a.id}"><td><span class="tag">${h(r.a.tag)}</span><div class="muted small">${h(r.a.model)}</div></td><td><b>${money(r.total)}</b></td>
+    <td class="hide-m">${money(r.parts)}${r.unpriced ? ` <span class="muted small">(+${r.unpriced} unpriced)</span>` : ''}</td><td class="hide-m">${money(r.repairs)}</td>
+    <td>${r.faults}${r.faults12 >= PROBLEM_FAULTS ? ` <span class="pill d-overdue" title="${r.faults12} faults in 12 months">Problem unit</span>` : ''}<div class="muted small">${r.faults12} in 12 mo</div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function modelCostTable() {
+  const by = new Map();
+  for (const a of S.assets) {
+    if (a.category === 'Other') continue;
+    const c = costOf(a), k = a.model || '—';
+    const m = by.get(k) || { model: k, units: 0, total: 0, faults12: 0, problems: 0 };
+    m.units++; m.total += c.total; m.faults12 += c.faults12; if (c.faults12 >= PROBLEM_FAULTS) m.problems++;
+    by.set(k, m);
+  }
+  const rows = [...by.values()].filter(m => m.total || m.faults12).sort((x, y) => y.total - x.total || y.faults12 - x.faults12);
+  if (!rows.length) return '<p class="empty">Nothing yet.</p>';
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Model</th><th>Units</th><th>Spent</th><th class="hide-m">Per unit</th><th>Faults · 12 mo</th></tr></thead><tbody>
+  ${rows.map(m => `<tr><td>${h(m.model)}</td><td>${m.units}</td><td>${money(m.total)}</td><td class="hide-m">${money(m.total / m.units)}</td><td>${m.faults12}${m.problems ? ` <span class="muted small">· ${m.problems} problem unit${m.problems > 1 ? 's' : ''}</span>` : ''}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+/* ---------- parts order list ---------- */
+let order = null;   // { rows: [{ pid, qty, on }] }
+function suggestQty(pt) {
+  if (pt.min_qty > 0) return Math.max(1, pt.min_qty * 2 - pt.quantity);
+  return pt.quantity === 0 ? 1 : 0;
+}
+function orderModal() {
+  if (S.partsMissing) return toast('Run rigready-parts.sql in Supabase first', 'bad');
+  order = { rows: S.parts.filter(isLow).sort((a, b) => String(a.make || '').localeCompare(String(b.make || '')) || a.name.localeCompare(b.name)).map(pt => ({ pid: pt.id, qty: suggestQty(pt), on: true })) };
+  openModal('Parts order list', '<div id="order-body"></div>');
+  $('.modal-box').style.maxWidth = '760px';
+  drawOrder();
+}
+function orderLines() { return order.rows.filter(r => r.on && r.qty > 0).map(r => ({ ...r, pt: partById(r.pid) })).filter(r => r.pt); }
+function drawOrder() {
+  const lines = orderLines(), total = lines.reduce((n, r) => n + (hasH(r.pt.unit_price) ? r.qty * r.pt.unit_price : 0), 0);
+  const unpriced = lines.filter(r => !hasH(r.pt.unit_price)).length;
+  const others = S.parts.filter(pt => !order.rows.some(r => r.pid === pt.id)).sort((a, b) => a.name.localeCompare(b.name));
+  $('#order-body').innerHTML = `<p class="muted small" style="margin-bottom:10px">Everything low or out of stock, with a suggested quantity (back up to twice its low-stock level). Change quantities, untick lines, or add other parts.</p>
+    ${order.rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Part</th><th class="hide-m">Code</th><th>Have</th><th style="width:90px">Order</th><th class="hide-m">Line</th></tr></thead><tbody>
+    ${order.rows.map((r, i) => { const pt = partById(r.pid); if (!pt) return ''; return `<tr><td><input type="checkbox" data-order-on="${i}" ${r.on ? 'checked' : ''} style="width:auto;min-height:0"></td>
+      <td>${h(pt.name)}<div class="muted small">${h(pt.make || '')}</div></td><td class="hide-m mono small">${h(pt.supplier_code || pt.part_number || '—')}</td><td>${qtyPill(pt)}</td>
+      <td><input type="number" min="0" step="1" value="${r.qty}" data-order-qty="${i}" inputmode="numeric" style="padding:6px 8px;min-height:32px"></td>
+      <td class="hide-m small">${hasH(pt.unit_price) ? money(r.qty * pt.unit_price) : '—'}</td></tr>`; }).join('')}
+    </tbody></table></div>` : '<p class="empty">Nothing is low or out of stock.</p>'}
+    <div class="row" style="margin:12px 0"><select data-order-add style="flex:1;min-width:200px"><option value="">+ Add another part…</option>${others.map(pt => `<option value="${pt.id}">${h(pt.make ? pt.make + ' — ' : '')}${h(pt.name)}</option>`).join('')}</select></div>
+    <div class="note" style="margin-bottom:12px"><b>${lines.length} line${lines.length === 1 ? '' : 's'}</b> · ${lines.reduce((n, r) => n + r.qty, 0)} items · estimated <b>${money(total)}</b>${unpriced ? ` + ${unpriced} line${unpriced > 1 ? 's' : ''} with no price` : ''}</div>
+    <div class="modal-f" style="flex-wrap:wrap"><button type="button" class="btn" data-act="order-copy" ${lines.length ? '' : 'disabled'}>Copy</button><button type="button" class="btn" data-act="order-csv" ${lines.length ? '' : 'disabled'}>${ic('download')} CSV</button>
+      <button type="button" class="btn" data-act="order-print" ${lines.length ? '' : 'disabled'}>${ic('print')} Print</button><button type="button" class="btn primary" data-act="order-email" ${lines.length ? '' : 'disabled'}>Email order</button></div>`;
+}
+function orderText() {
+  const lines = orderLines();
+  const body = lines.map(r => `${r.qty} x ${r.pt.name}${r.pt.supplier_code ? ' — code ' + r.pt.supplier_code : ''}${r.pt.part_number ? ' — part no. ' + r.pt.part_number : ''}`).join('\n');
+  return `Hi,\n\nPlease supply the following parts:\n\n${body}\n\nThanks,\n${S.profile?.name || ''}`;
+}
+const ORDER = {
+  'order-copy': async () => { try { await navigator.clipboard.writeText(orderText()); toast('Order copied — paste it into an email'); } catch { toast('Couldn\'t copy on this device — use Email or CSV', 'warn'); } },
+  'order-email': () => { location.href = `mailto:${encodeURIComponent(CFG.ORDER_EMAIL || '')}?subject=${encodeURIComponent('Parts order ' + fmtDate(new Date()))}&body=${encodeURIComponent(orderText())}`; },
+  'order-csv': () => downloadText(`parts-order-${stamp()}.csv`, toCSV(orderLines(), [['Qty', r => r.qty], ['Part', r => r.pt.name], ['Make', r => r.pt.make], ['Supplier code', r => r.pt.supplier_code], ['Part number', r => r.pt.part_number], ['In stock', r => r.pt.quantity], ['Price each', r => r.pt.unit_price ?? ''], ['Line total', r => hasH(r.pt.unit_price) ? (r.qty * r.pt.unit_price).toFixed(2) : '']])),
+  'order-print': () => { const lines = orderLines(); printDoc(`<h1>Parts order</h1><div class="sub">${fmtDate(new Date())} · ${h(S.profile?.name || '')}</div><table><thead><tr><th>Qty</th><th>Part</th><th>Code</th><th>Part no.</th><th>Price each</th><th>Line</th></tr></thead><tbody>${lines.map(r => `<tr><td>${r.qty}</td><td>${h(r.pt.name)}</td><td>${h(r.pt.supplier_code || '')}</td><td>${h(r.pt.part_number || '')}</td><td>${money(r.pt.unit_price)}</td><td>${hasH(r.pt.unit_price) ? money(r.qty * r.pt.unit_price) : ''}</td></tr>`).join('')}</tbody></table>`); },
+};
+
+/* ============================================================
+   INSPECTIONS & LOAD TESTS
+   ============================================================ */
+const CHECKLIST = CFG.CHECKLIST || [
+  'Hook & safety latch (no stretch, cracks or wear; latch closes)',
+  'Hook swivel / rotation',
+  'Load chain (no twists, kinks, nicks, corrosion or stretch)',
+  'Chain lubrication',
+  'Liftwheel, chain guide & chain entry',
+  'Chain bag / container & end stop',
+  'Brake (holds, no slip)',
+  'Upper & lower limit switches',
+  'Controls & direction (up/down correct, e-stop)',
+  'Power & control cables, plugs & strain relief',
+  'Body, fasteners & suspension point',
+  'WLL & ID labels legible',
+];
+const INSP_DAYS = CFG.INSPECTION_DAYS || 182, LOAD_DAYS = CFG.LOADTEST_DAYS || 365;
+const KIND_LABEL = { 'Periodic': 'Periodic inspection', 'Load test': 'Load test' };
+const isMotor = a => a.category === 'Chain motor' && a.status !== 'Retired';
+const inspFor = id => idx().insp.get(id) || [];
+const lastPass = (id, kind) => inspFor(id).find(i => i.kind === kind && i.result === 'Pass');
+const everyText = days => days % 365 === 0 ? `every ${days / 365 === 1 ? '' : days / 365 + ' '}year${days / 365 === 1 ? '' : 's'}` : days >= 28 ? `every ${Math.round(days / 30.4)} months` : `every ${days} days`;
+function dueOf(a, kind) {
+  const days = kind === 'Load test' ? LOAD_DAYS : INSP_DAYS, last = lastPass(a.id, kind);
+  const latest = inspFor(a.id).find(i => i.kind === kind);
+  if (latest && latest.result === 'Fail') return { kind, last, failed: latest, due: null, left: null, state: 'failed' };   // needs a new passing check
+  if (!last) return { kind, last: null, due: null, left: null, state: 'never' };
+  const due = new Date(new Date(last.inspected_on + 'T12:00:00').getTime() + days * DAY);
+  const left = Math.ceil((due - Date.now()) / DAY);
+  return { kind, last, due, left, state: left < 0 ? 'overdue' : left <= CFG.DUE_SOON_DAYS ? 'soon' : 'ok' };
+}
+const dueBad = d => d.state === 'overdue' || d.state === 'never' || d.state === 'failed';
+function dueAll() {
+  if (idx().dueI) return idx().dueI;
+  const out = [];
+  for (const a of S.assets) if (isMotor(a)) for (const k of ['Periodic', 'Load test']) out.push({ a, ...dueOf(a, k) });
+  const rank = { failed: 0, never: 0, overdue: 0, soon: 1, ok: 2 };
+  return idx().dueI = out.sort((x, y) => rank[x.state] - rank[y.state] || (x.left ?? -1e9) - (y.left ?? -1e9) || F_SORT.compare(x.a.tag, y.a.tag));
+}
+const motorsOverdue = () => [...new Set(dueAll().filter(dueBad).map(d => d.a))];
+function cleared(a) { return isMotor(a) && a.status === 'OK' && !dueBad(dueOf(a, 'Periodic')) && !dueBad(dueOf(a, 'Load test')); }
+const inspPill = d => d.state === 'failed' ? '<span class="pill d-overdue">Failed</span>' : d.state === 'never' ? '<span class="pill d-overdue">Not on record</span>' : d.state === 'overdue' ? '<span class="pill d-overdue">Overdue</span>' : d.state === 'soon' ? '<span class="pill d-soon">Due soon</span>' : '<span class="pill d-ok">OK</span>';
+const dueTextI = d => d.state === 'failed' ? `Failed ${fmtDate(d.failed.inspected_on + 'T12:00:00')} — needs a new passing ${d.kind === 'Load test' ? 'load test' : 'inspection'}` : d.state === 'never' ? 'No passed ' + (d.kind === 'Load test' ? 'load test' : 'inspection') + ' on record' : d.left < 0 ? `${-d.left} days overdue (was due ${fmtDate(d.due)})` : `due ${fmtDate(d.due)} · ${d.left} days`;
+const resPill = r => `<span class="pill ${r === 'Pass' ? 's-ok' : 's-faulty'}">${r === 'Pass' ? 'Pass' : 'Fail'}</span>`;
+
+function inspectionCard(a) {
+  if (a.category !== 'Chain motor') return '';
+  const ins = inspFor(a.id).slice(0, 12);
+  const row = k => { const d = dueOf(a, k); return `<li><div style="flex:1;min-width:150px"><div>${KIND_LABEL[k]} <span class="muted small">· ${everyText(k === 'Load test' ? LOAD_DAYS : INSP_DAYS)}</span></div><div class="muted small">${dueTextI(d)}</div></div>${inspPill(d)}
+    ${a.status === 'Retired' ? '' : `<button class="btn sm" data-act="inspect" data-id="${a.id}" data-kind="${k}">${k === 'Load test' ? 'Load test' : 'Inspect'}</button>`}</li>`; };
+  return `<section class="card"><h2>Inspections</h2><ul class="list">${row('Periodic')}${row('Load test')}</ul>
+    ${ins.length ? `<h2 style="margin:16px 0 6px">History</h2><ul class="list">${ins.map(i => { const fails = Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k.split(' (')[0]);
+      return `<li><div style="flex:1;min-width:150px"><div>${KIND_LABEL[i.kind]} · ${fmtDate(i.inspected_on + 'T12:00:00')}</div><div class="muted small">${h(i.inspector_name || nameOf(i.created_by))}${hasH(i.gauge_mm) ? ` · chain ${i.gauge_mm} mm${hasH(i.gauge_max_mm) ? ' / limit ' + i.gauge_max_mm : ''}` : ''}${hasH(i.test_load_kg) ? ` · test ${F_NUM.format(i.test_load_kg)} kg` : ''}${fails.length ? ` · <span style="color:var(--bad)">failed: ${h(fails.join(', '))}</span>` : ''}</div></div>${resPill(i.result)}</li>`; }).join('')}</ul>` : ''}
+  </section>`;
+}
+function clearanceBanner(a) {
+  if (!isMotor(a)) return '';
+  const p = dueOf(a, 'Periodic'), l = dueOf(a, 'Load test'), why = [];
+  if (a.status !== 'OK') why.push(`status is ${a.status}`);
+  const reason = (d, what) => d.state === 'failed' ? `failed its last ${what}` : d.state === 'never' ? `no passed ${what} on record` : `${what} overdue`;
+  if (dueBad(p)) why.push(reason(p, 'inspection'));
+  if (dueBad(l)) why.push(reason(l, 'load test'));
+  if (!why.length) return `<div class="alert" style="background:#10261b;border-color:#1d4a33"><div class="alert-h" style="color:#7ee2b0;margin:0">${ic('check')} Cleared for use · next inspection ${fmtDate(p.due)} · next load test ${fmtDate(l.due)}</div></div>`;
+  return `<div class="alert bad"><div class="alert-h">${ic('alert')} Do not use — ${h(why.join(', '))}</div></div>`;
+}
+
+let inspAid = null;
+function inspModal(aid, kind = 'Periodic') {
+  const a = assetById(aid); if (!a) return;
+  if (a.category !== 'Chain motor') return toast('Inspections are for chain motors', 'warn');
+  inspAid = aid;
+  openModal(`Inspect — ${a.tag}`, `<form data-form="inspect" data-insp>${peopleList()}<input type="hidden" name="asset_id" value="${a.id}">
+    <div class="fgrid">
+      <div class="field"><label>Type</label><select name="kind" data-insp-kind><option value="Periodic" ${kind === 'Periodic' ? 'selected' : ''}>Periodic inspection</option><option value="Load test" ${kind === 'Load test' ? 'selected' : ''}>Load test</option></select></div>
+      <div class="field"><label>Date</label><input name="inspected_on" type="date" required value="${isoDay()}" max="${isoDay()}"></div>
+      <div class="field full"><label>Inspected by</label><input name="inspector_name" list="dl-people" required value="${h(S.profile.name)}" autocomplete="off"></div>
+    </div>
+    <div id="insp-body"></div>
+    <div class="field"><label>Notes</label><textarea name="notes" required placeholder="What you checked, anything to keep an eye on, or why it failed"></textarea></div>
+    <div class="field"><label>Photos (optional)</label><input name="photos" type="file" accept="image/*" multiple></div>
+    <div id="insp-result" class="note"></div>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Save</button></div></form>`);
+  $('.modal-box').style.maxWidth = '680px';
+  drawInspBody(kind);
+}
+const seg = (name, opts, req = true) => `<div class="seg">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}" ${req ? 'required' : ''}><span class="seg-${v}">${l}</span></label>`).join('')}</div>`;
+function drawInspBody(kind) {
+  const a = assetById(inspAid);
+  const lim = hasH(a.gauge_max_mm) ? Number(a.gauge_max_mm) : null, links = a.gauge_links || 11;
+  $('#insp-body').innerHTML = kind === 'Load test' ? `
+    <div class="fgrid">
+      <div class="field"><label>Working load limit</label><div class="note" style="margin:0">${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : 'Not set — add it with Edit'}</div></div>
+      <div class="field"><label>Test load used (kg)</label><input name="test_load_kg" type="number" min="1" step="any" required inputmode="decimal" value="${hasH(a.wll_kg) ? Math.round(a.wll_kg * 1.25) : ''}"></div>
+    </div>
+    <table class="tbl chk"><tbody>
+      <tr><td>Held the test load with no slip or creep</td><td>${seg('lt_held', [['pass', 'Yes'], ['fail', 'No']])}</td></tr>
+      <tr><td>Brake and limit switches worked under load</td><td>${seg('lt_brake', [['pass', 'Yes'], ['fail', 'No']])}</td></tr>
+      <tr><td>No abnormal noise, heat or vibration</td><td>${seg('lt_noise', [['pass', 'Yes'], ['fail', 'No']])}</td></tr>
+    </tbody></table>`
+  : `<table class="tbl chk"><tbody>${CHECKLIST.map((c, i) => `<tr><td>${h(c)}</td><td>${seg('c' + i, [['pass', 'Pass'], ['fail', 'Fail'], ['na', 'N/A']])}</td></tr>`).join('')}</tbody></table>
+    <div class="fgrid" style="margin-top:12px">
+      <div class="field"><label>Chain gauge over ${links} links (mm)</label><input name="gauge_mm" type="number" min="0" step="0.01" required inputmode="decimal" placeholder="Measured length"></div>
+      <div class="field"><label>Wear limit (mm)</label>${lim != null ? `<div class="note" style="margin:0">${lim} mm — from this motor's record</div><input type="hidden" name="gauge_max_mm" value="${lim}">`
+        : `<input name="gauge_max_mm" type="number" min="0" step="0.01" inputmode="decimal" placeholder="From the manual"><label style="display:flex;gap:8px;align-items:center;margin-top:6px;color:var(--muted)"><input type="checkbox" name="save_limit" checked style="width:auto;min-height:0"> Save for all ${h(a.model || 'motors of this model')}</label>`}</div>
+    </div>`;
+  inspResult();
+}
+function inspCheck(f) {
+  const fd = new FormData(f), kind = fd.get('kind');
+  const names = kind === 'Load test' ? ['lt_held', 'lt_brake', 'lt_noise'] : CHECKLIST.map((_, i) => 'c' + i);
+  const missing = names.filter(n => !fd.get(n)).length;
+  const fails = names.filter(n => fd.get(n) === 'fail').length;
+  const g = numOrNull(fd.get('gauge_mm')), lim = numOrNull(fd.get('gauge_max_mm'));
+  const worn = kind === 'Periodic' && g != null && lim != null && g > lim;
+  return { kind, missing, fails, worn, g, lim, fd, names };
+}
+function inspResult() {
+  const f = $('form[data-insp]'), el = $('#insp-result'); if (!f || !el) return;
+  const c = inspCheck(f);
+  if (c.fails || c.worn) { el.style.color = 'var(--bad)'; el.innerHTML = `<b>FAIL</b> — ${[c.fails ? c.fails + ' item' + (c.fails > 1 ? 's' : '') + ' failed' : '', c.worn ? `chain worn past limit (${c.g} > ${c.lim} mm)` : ''].filter(Boolean).join(' and ')}. The motor will be tagged <b>Out of service</b>.`; }
+  else if (c.missing) { el.style.color = ''; el.textContent = `${c.missing} item${c.missing > 1 ? 's' : ''} still to check.`; }
+  else { el.style.color = 'var(--ok)'; el.innerHTML = `<b>PASS</b>${c.kind === 'Periodic' && c.lim == null ? ' — no wear limit entered, so the chain measurement is recorded but not checked' : ''}.`; }
+}
+async function submitInspect(f) {
+  const a = assetById(inspAid), c = inspCheck(f), fd = c.fd;
+  if (c.missing) throw new Error(`Answer every item (${c.missing} left).`);
+  const notes = fd.get('notes').trim(), who = fd.get('inspector_name').trim();
+  if (!notes || !who) throw new Error('Fill in the inspector and notes.');
+  const labels = c.kind === 'Load test' ? { lt_held: 'Held the test load', lt_brake: 'Brake & limits under load', lt_noise: 'No abnormal noise/heat' } : Object.fromEntries(CHECKLIST.map((t, i) => ['c' + i, t]));
+  const checklist = Object.fromEntries(c.names.map(n => [labels[n], fd.get(n)]));
+  const result = c.fails || c.worn ? 'Fail' : 'Pass';
+  const photos = [];
+  for (const file of [...f.querySelector('[name=photos]').files]) { const blob = await compressImage(file); photos.push(await api.upload('photos', blob, (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg')); }
+  const row = { asset_id: a.id, kind: c.kind, inspected_on: fd.get('inspected_on'), checklist, result, notes, photos, inspector_name: who, created_by: S.user.id,
+    gauge_mm: c.kind === 'Periodic' ? c.g : null, gauge_max_mm: c.kind === 'Periodic' ? c.lim : null,
+    test_load_kg: c.kind === 'Load test' ? numOrNull(fd.get('test_load_kg')) : null, held: c.kind === 'Load test' ? fd.get('lt_held') === 'pass' : null };
+  const ins = await api.insert('inspections', row); S.inspections.unshift(ins);
+  if (c.kind === 'Periodic' && c.lim != null && !hasH(a.gauge_max_mm)) {               // remember the wear limit
+    const targets = fd.get('save_limit') ? S.assets.filter(x => norm(x.make) === norm(a.make) && norm(x.model) === norm(a.model) && !hasH(x.gauge_max_mm)) : [a];
+    for (const x of targets) Object.assign(x, await api.update('assets', x.id, { gauge_max_mm: c.lim, updated_by: S.user.id }));
+  }
+  const failed = Object.entries(checklist).filter(([, v]) => v === 'fail').map(([k]) => k);
+  const details = [failed.length ? 'Failed: ' + failed.join('; ') : '', c.worn ? `Chain worn: ${c.g} mm over ${a.gauge_links || 11} links (limit ${c.lim} mm)` : c.g != null ? `Chain: ${c.g} mm${c.lim != null ? ' (limit ' + c.lim + ')' : ''}` : '',
+    row.test_load_kg ? `Test load ${F_NUM.format(row.test_load_kg)} kg` : '', notes].filter(Boolean).join('\n');
+  let st = a.status;
+  if (result === 'Fail' && a.status !== 'Out of service') { st = 'Out of service'; Object.assign(a, await api.update('assets', a.id, { ...statusPatch(a, st), updated_at: new Date().toISOString(), updated_by: S.user.id })); }
+  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: 'Inspection', title: `${KIND_LABEL[c.kind]}: ${result.toUpperCase()}`, details, inspection_id: ins.id, location: a.location || '', photos, status_after: result === 'Fail' ? st : null, created_by: S.user.id }));
+  if (result === 'Fail') { beep(false); toast(`${a.tag} FAILED — tagged out of service`, 'bad'); }
+  else { beep(true); toast(`${a.tag} passed${a.status !== 'OK' ? ' — status is still ' + a.status + '; log a repair to return it to service' : ''}`); }
+  closeModal(); render();
+}
+
+let inspTab = 'attention';
+function vInspections() {
+  const all = dueAll(), motors = S.assets.filter(isMotor).sort((x, y) => F_SORT.compare(x.tag, y.tag));
+  const by = new Map(); for (const d of all) { const m = by.get(d.a.id) || {}; m[d.kind] = d; by.set(d.a.id, m); }
+  const bad = motors.filter(a => dueBad(by.get(a.id).Periodic) || dueBad(by.get(a.id)['Load test']));
+  const soon = motors.filter(a => !bad.includes(a) && (by.get(a.id).Periodic.state === 'soon' || by.get(a.id)['Load test'].state === 'soon'));
+  const list = inspTab === 'attention' ? [...bad, ...soon] : motors;
+  const cell = d => `${inspPill(d)}<div class="muted small">${d.state === 'failed' ? 'on ' + fmtDate(d.failed.inspected_on + 'T12:00:00') : d.state === 'never' ? 'none on record' : (d.left < 0 ? 'was due ' : 'due ') + fmtDate(d.due)}</div>`;
+  return `<header class="page-h"><div><h1>Inspections</h1><p class="muted">Periodic inspection ${everyText(INSP_DAYS)} · load test ${everyText(LOAD_DAYS)}.</p></div>
+    <div class="row"><button class="btn" data-act="export" data-what="due">${ic('download')} Due list CSV</button><button class="btn" data-act="export" data-what="register">${ic('download')} Inspection register CSV</button></div></header>
+  <div class="stats">
+    <div class="stat"><span class="muted small">Chain motors</span><b>${motors.length}</b></div>
+    <div class="stat ok"><span class="muted small">Cleared for use</span><b>${motors.filter(cleared).length}</b></div>
+    <div class="stat ${bad.length ? 'bad' : ''}"><span class="muted small">Overdue / not on record</span><b>${bad.length}</b></div>
+    <div class="stat ${soon.length ? 'warn' : ''}"><span class="muted small">Due in ${CFG.DUE_SOON_DAYS} days</span><b>${soon.length}</b></div>
+  </div>
+  <section class="card">
+    <div class="row" style="margin-bottom:12px"><div class="tabs"><button class="${inspTab === 'attention' ? 'on' : ''}" data-act="insp-tab" data-tab="attention">Needs attention (${bad.length + soon.length})</button><button class="${inspTab === 'all' ? 'on' : ''}" data-act="insp-tab" data-tab="all">All motors (${motors.length})</button></div></div>
+    ${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Motor</th><th class="hide-m">WLL</th><th>Periodic</th><th>Load test</th><th></th></tr></thead><tbody>
+    ${list.map(a => `<tr><td><a href="#/asset/${a.id}" class="tag" style="text-decoration:none">${h(a.tag)}</a><div class="muted small">${h(a.model || '')}${a.status !== 'OK' ? ' · ' + h(a.status) : ''}</div></td><td class="hide-m">${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : '—'}</td>
+      <td>${cell(by.get(a.id).Periodic)}</td><td>${cell(by.get(a.id)['Load test'])}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-act="inspect" data-id="${a.id}" data-kind="Periodic">Inspect</button> <button class="btn sm" data-act="inspect" data-id="${a.id}" data-kind="Load test">Load test</button></td></tr>`).join('')}
+    </tbody></table></div>` : `<p class="empty">${inspTab === 'attention' ? 'Every motor is in date. 👍' : 'No chain motors yet.'}</p>`}
+  </section>`;
+}
+
+/* ============================================================
+   MODALS & FORMS
+   ============================================================ */
+function openModal(title, body) { $('#modal-title').textContent = title; $('#modal-body').innerHTML = body; $('#modal').classList.add('open'); setTimeout(() => $('#modal-body input:not([type=hidden]):not([type=file]),#modal-body select,#modal-body textarea')?.focus(), 30); }
+function closeModal() { $('#modal').classList.remove('open'); $('#modal-body').innerHTML = ''; if (S.needsRender) setTimeout(render, 0); }
+const uniq = arr => [...new Set(arr.filter(Boolean).map(s => String(s).trim()))].sort();
+const datalists = () => `
+  <datalist id="dl-make">${uniq([...S.assets.map(a => a.make), ...S.manuals.map(m => m.make)]).map(v => `<option value="${h(v)}">`).join('')}</datalist>
+  <datalist id="dl-model">${uniq([...S.assets.map(a => a.model), ...S.manuals.map(m => m.model)]).map(v => `<option value="${h(v)}">`).join('')}</datalist>
+  <datalist id="dl-loc">${uniq(S.assets.map(a => a.location)).map(v => `<option value="${h(v)}">`).join('')}</datalist>
+  <datalist id="dl-tag">${S.assets.map(a => `<option value="${h(a.tag)}">${h(a.model)}</option>`).join('')}</datalist>`;
+
+function assetModal(a, opts = {}) {
+  const v = a || { tag: opts.tag || '', category: 'Chain motor', status: 'OK', make: 'CM', gauge_links: 11 };
+  openModal(a ? 'Edit ' + a.tag : 'Add motor', `${opts.notice ? `<div class="note">${opts.notice}</div>` : ''}
+  <form data-form="asset">${datalists()}<input type="hidden" name="id" value="${h(a?.id || '')}">
+    <div class="fgrid">
+      <div class="field"><label>Asset tag (QR code value)</label><input name="tag" required value="${h(v.tag)}" class="mono" autocapitalize="characters"></div>
+      <div class="field"><label>Serial number</label><input name="serial" value="${h(v.serial)}" class="mono"></div>
+      <div class="field"><label>Type</label><select name="category">${CATS.map(c => `<option ${v.category === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div class="field"><label>Status</label><select name="status">${STATUSES.map(s => `<option ${v.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Make</label><input name="make" list="dl-make" value="${h(v.make)}" placeholder="e.g. CM"></div>
+      <div class="field"><label>Model</label><input name="model" list="dl-model" value="${h(v.model)}" placeholder="e.g. Lodestar 1 t"></div>
+      <div class="field"><label>Working load limit (kg)</label><input name="wll_kg" type="number" step="any" min="0" inputmode="decimal" value="${h(v.wll_kg)}" placeholder="e.g. 1000"></div>
+      <div class="field"><label>Chain length (m)</label><input name="chain_length_m" type="number" step="any" min="0" inputmode="decimal" value="${h(v.chain_length_m)}" placeholder="e.g. 20"></div>
+      <div class="field"><label>Speed</label><input name="speed" value="${h(v.speed)}" placeholder="e.g. 4 m/min"></div>
+      <div class="field"><label>Power / control</label><input name="voltage" value="${h(v.voltage)}" placeholder="e.g. 400V 3ph, D8+"></div>
+      <div class="field"><label>Chain wear limit (mm)</label><input name="gauge_max_mm" type="number" step="0.01" min="0" inputmode="decimal" value="${h(v.gauge_max_mm)}" placeholder="From the manual"></div>
+      <div class="field"><label>…measured over how many links</label><input name="gauge_links" type="number" step="1" min="1" inputmode="numeric" value="${h(v.gauge_links ?? 11)}"></div>
+      <div class="field full"><label>Location</label><input name="location" list="dl-loc" value="${h(v.location)}" placeholder="e.g. Motor cage, Truck 2"></div>
+      <div class="field full"><label>Notes</label><textarea name="notes" placeholder="Mods, brake settings, anything worth knowing">${h(v.notes)}</textarea></div>
+    </div>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">${a ? 'Save' : 'Add item'}</button></div>
+  </form>`);
+}
+async function submitAsset(f) {
+  const fd = Object.fromEntries(new FormData(f)); const id = fd.id; delete fd.id;
+  for (const k of ['tag','serial','make','model','location','notes','speed','voltage']) fd[k] = (fd[k] || '').trim();
+  for (const k of ['wll_kg','chain_length_m','gauge_max_mm']) fd[k] = numOrNull(fd[k]);
+  fd.gauge_links = parseInt(fd.gauge_links || '11', 10) || 11;
+  const old = id ? assetById(id) : null;
+  if (old) {
+    const changed = fd.status !== old.status;
+    const patch = { ...fd, updated_at: new Date().toISOString(), updated_by: S.user.id };
+    if (changed) Object.assign(patch, statusPatch(old, fd.status)); else delete patch.status;
+    const saved = await api.update('assets', id, patch); Object.assign(old, saved);
+    if (changed) {
+      const l = await api.insert('logs', { asset_id: id, kind: 'Note', title: `Status changed to ${fd.status}`, details: '', photos: [], status_after: fd.status, created_by: S.user.id });
+      S.logs.unshift(l);
+    }
+    toast('Saved'); closeModal(); render();
+  } else {
+    const row = { ...fd, ...statusPatch(null, fd.status), updated_by: S.user.id };
+    const saved = await api.insert('assets', row); S.assets.push(saved);
+    toast('Motor added'); closeModal(); location.hash = '#/asset/' + saved.id;
+  }
+}
+
+function logModal(assetId, pre = {}) {
+  const a = assetById(assetId); if (!a) return;
+  const kind = pre.kind || (BAD.includes(a.status) ? 'Repair' : 'Inspection');
+  const scheds = S.schedules.filter(s => scheduleTargets(s).some(x => x.id === a.id));
+  const statusFor = k => k === 'Fault' ? (BAD.includes(a.status) ? a.status : 'Faulty') : k === 'Repair' ? 'OK' : a.status;
+  openModal(`Log entry — ${a.tag}`, `<form data-form="log">${datalists()}<input type="hidden" name="asset_id" value="${a.id}">
+    <div class="fgrid">
+      <div class="field"><label>Type</label><select name="kind">${KINDS.map(k => `<option ${k === kind ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+      <div class="field"><label>Status after this</label><select name="status_after">${STATUSES.map(s => `<option ${s === (pre.status || statusFor(kind)) ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field full" id="sched-field" ${kind === 'Service' && scheds.length ? '' : 'hidden'}><label>Scheduled task completed</label><select name="schedule_id"><option value="">— Not a scheduled task —</option>${scheds.map(s => `<option value="${s.id}" ${pre.schedule_id === s.id ? 'selected' : ''}>${h(s.task)}</option>`).join('')}</select></div>
+      <div class="field full"><label>Summary</label><input name="title" required value="${h(pre.title || '')}" placeholder="${kind === 'Fault' ? 'e.g. Brake slipping, chain jumping, no down' : 'What was done'}"></div>
+      <div class="field full"><label>Details</label><textarea name="details" required placeholder="Symptoms, tests, findings, what fixed it"></textarea></div>
+      <div class="field full"><label>Where is the motor now?</label><input name="location" list="dl-loc" required value="${h(a.location || '')}" placeholder="e.g. Repair bench, Motor cage, Truck 2" autocomplete="off"></div>
+      <div class="field full"><label>Parts used</label><input name="parts" required placeholder="e.g. Brake kit x1, contactor x1 — or type None"></div>
+      <div class="field full"><label>Photos (at least one)</label><input name="photos" type="file" accept="image/*" multiple required></div>
+    </div>
+    <p class="muted small" style="margin:-4px 0 12px">All fields are required.</p><div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Save entry</button></div></form>`);
+  $('#modal-body [name=kind]').dataset.cur = a.status;
+}
+async function submitLog(f) {
+  const fd = new FormData(f); const a = assetById(fd.get('asset_id'));
+  for (const [k, label] of [['title','Summary'],['details','Details'],['location','Location'],['parts','Parts used']]) if (!String(fd.get(k) || '').trim()) throw new Error(label + ' is required.');
+  const files = [...f.querySelector('[name=photos]').files];
+  const photos = [];
+  for (const file of files) { const blob = await compressImage(file); photos.push(await api.upload('photos', blob, (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg')); }
+  const kind = fd.get('kind'), status_after = fd.get('status_after');
+  const row = { asset_id: a.id, kind, title: fd.get('title').trim(), details: fd.get('details').trim(), parts: fd.get('parts').trim(),
+    location: fd.get('location').trim(), status_after: status_after !== a.status || kind === 'Fault' || kind === 'Repair' ? status_after : null,
+    photos, created_by: S.user.id };
+  const log = await api.insert('logs', row); S.logs.unshift(log);
+  const patch = {};
+  if (status_after !== a.status) Object.assign(patch, statusPatch(a, status_after));
+  if (row.location !== (a.location || '')) patch.location = row.location;
+  if (Object.keys(patch).length) { patch.updated_at = new Date().toISOString(); patch.updated_by = S.user.id; Object.assign(a, await api.update('assets', a.id, patch)); }
+  toast('Entry saved'); closeModal(); render();
+}
+
+function schedModal(d = {}) {
+  const a = d.aid && assetById(d.aid);
+  openModal('Add service schedule', `<form data-form="sched">${datalists()}
+    <div class="field"><label>Applies to</label><select name="scope"><option value="model" ${a ? '' : 'selected'}>Every item of a model</option><option value="asset" ${a ? 'selected' : ''}>One specific item</option></select></div>
+    <div class="fgrid" id="scope-model" ${a ? 'hidden' : ''}><div class="field"><label>Make</label><input name="make" list="dl-make" value="${h(a?.make || '')}"></div><div class="field"><label>Model</label><input name="model" list="dl-model" value="${h(a?.model || '')}"></div></div>
+    <div class="field" id="scope-asset" ${a ? '' : 'hidden'}><label>Asset tag</label><input name="tag" list="dl-tag" value="${h(a?.tag || '')}" class="mono"></div>
+    <div class="field"><label>Task</label><input name="task" required placeholder="e.g. Clean optics & fans, Lamp change, Software update"></div>
+    <div class="fgrid"><div class="field"><label>Every … days</label><input name="interval_days" type="number" min="1" step="1" placeholder="e.g. 180"></div><div class="field"><label>and/or every … hours</label><input name="interval_hours" type="number" min="1" step="any" placeholder="e.g. 1500"></div></div>
+    <div class="field"><label>Hours count from</label><select name="hours_basis"><option value="lamp">Lamp hours (lamp changes)</option><option value="fixture">Fixture hours (cleans, services)</option></select></div>
+    <p class="muted small" style="margin-bottom:12px">If you set both, it's due at whichever comes first.</p>
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Add schedule</button></div></form>`);
+}
+async function submitSched(f) {
+  const fd = Object.fromEntries(new FormData(f));
+  const row = { task: fd.task.trim(), interval_days: fd.interval_days ? parseInt(fd.interval_days) : null, interval_hours: fd.interval_hours ? Number(fd.interval_hours) : null, hours_basis: fd.hours_basis || 'lamp' };
+  if (!row.interval_days && !row.interval_hours) throw new Error('Set an interval in days, hours, or both.');
+  if (fd.scope === 'asset') {
+    const a = S.assets.find(x => norm(x.tag) === norm(fd.tag)); if (!a) throw new Error('No item with that asset tag.');
+    row.asset_id = a.id;
+  } else {
+    if (!fd.make.trim() || !fd.model.trim()) throw new Error('Enter the make and model.');
+    row.make = fd.make.trim(); row.model = fd.model.trim();
+    if (!scheduleTargets(row).length && !confirm(`No items match ${row.make} ${row.model} yet. Add the schedule anyway?`)) return;
+  }
+  S.schedules.unshift(await api.insert('schedules', row)); toast('Schedule added'); closeModal(); render();
+}
+
+function manualModal(d = {}) {
+  openModal('Add manual', `<form data-form="manual">${datalists()}
+    <div class="fgrid"><div class="field"><label>Make</label><input name="make" list="dl-make" required value="${h(d.make || '')}"></div><div class="field"><label>Model (blank = all from this make)</label><input name="model" list="dl-model" value="${h(d.model || '')}"></div></div>
+    <div class="field"><label>Title</label><input name="title" required placeholder="e.g. Service manual v2.1"></div>
+    <div class="field"><label>Upload PDF</label><input name="file" type="file" accept="application/pdf,image/*"></div>
+    <div class="field"><label>…or link</label><input name="url" type="url" placeholder="https://"></div>
+    ${DEMO ? '<p class="muted small" style="margin-bottom:12px">Demo mode keeps uploads in your browser, which only holds a few MB. Links are better for testing.</p>' : ''}
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Add manual</button></div></form>`);
+}
+async function submitManual(f) {
+  const fd = new FormData(f); const file = fd.get('file'); const url = fd.get('url').trim();
+  if ((!file || !file.size) && !url) throw new Error('Upload a file or paste a link.');
+  const row = { make: fd.get('make').trim(), model: fd.get('model').trim(), title: fd.get('title').trim(), url: url || null, file_path: null, created_by: S.user.id };
+  if (file && file.size) row.file_path = await api.upload('manuals', file, file.name);
+  S.manuals.unshift(await api.insert('manuals', row)); toast('Manual added'); closeModal(); render();
+}
+async function openFile(bucket, path) {
+  const w = window.open('', '_blank');
+  try { const url = await api.fileUrl(bucket, path); if (!url) throw new Error('File not found');
+    if (url.startsWith('data:')) { w.document.write(`<title>File</title><body style="margin:0;background:#111"><iframe src="${url}" style="border:0;width:100vw;height:100vh"></iframe>`); }
+    else w.location = url;
+  } catch (e) { w?.close(); toast(errMsg(e), 'bad'); }
+}
+async function openManual(id) {
+  const m = S.manuals.find(x => x.id === id); if (!m) return;
+  if (m.file_path) return openFile('manuals', m.file_path);
+  window.open(m.url, '_blank', 'noopener');
+}
+
+/* ---------- deletes ---------- */
+async function del(table, id, msg, after) {
+  if (!confirm(msg)) return;
+  try { await api.remove(table, id); S[table] = S[table].filter(r => r.id !== id); after?.(); toast('Deleted'); render(); } catch (e) { toast(errMsg(e), 'bad'); }
+}
+
+/* ---------- exports & printing ---------- */
+function toCSV(rows, cols) {
+  const esc = v => { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return [cols.map(c => esc(c[0])).join(','), ...rows.map(r => cols.map(c => esc(c[1](r))).join(','))].join('\r\n');
+}
+function downloadText(name, text) {
+  const u = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
+  const l = document.createElement('a'); l.href = u; l.download = name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+const tagOf = id => assetById(id)?.tag || '';
+function exportCSV(what, opts = {}) {
+  if (what === 'inventory') downloadText(`inventory-${stamp()}.csv`, toCSV(filteredAssetsAll(), [
+    ['Asset tag', a => a.tag], ['Serial', a => a.serial], ['Type', a => a.category], ['Make', a => a.make], ['Model', a => a.model], ['Location', a => a.location],
+    ['WLL kg', a => a.wll_kg ?? ''], ['Chain length m', a => a.chain_length_m ?? ''], ['Speed', a => a.speed || ''], ['Power / control', a => a.voltage || ''], ['Chain wear limit mm', a => a.gauge_max_mm ?? ''],
+    ['Status', a => a.status], ['Cleared for use', a => isMotor(a) ? (cleared(a) ? 'YES' : 'NO') : ''], ['Next inspection', a => isMotor(a) ? (dueOf(a, 'Periodic').due ? fmtDate(dueOf(a, 'Periodic').due) : 'Not on record') : ''],
+    ['Next load test', a => isMotor(a) ? (dueOf(a, 'Load test').due ? fmtDate(dueOf(a, 'Load test').due) : 'Not on record') : ''], ['Faulty since', a => a.faulty_since ? fmtDate(a.faulty_since) : ''], ['Notes', a => a.notes]]));
+  if (what === 'faults') downloadText(`faults-${stamp()}.csv`, toCSV(faultRows(), [
+    ['Asset tag', a => a.tag], ['Make', a => a.make], ['Model', a => a.model], ['Status', a => a.status], ['Faulty since', a => fmtDate(a.faulty_since)], ['Days', a => a.faulty_since ? daysSince(a.faulty_since) : ''],
+    ['Over limit', a => a.faulty_since && daysSince(a.faulty_since) >= CFG.FAULT_ALERT_DAYS ? 'YES' : ''], ['Latest note', a => lastActivity(a)?.title || ''], ['Location', a => a.location]]));
+  if (what === 'due') downloadText(`inspections-due-${stamp()}.csv`, toCSV(dueAll(), [
+    ['Motor', d => d.a.tag], ['Model', d => d.a.model], ['WLL kg', d => d.a.wll_kg ?? ''], ['Check', d => KIND_LABEL[d.kind]], ['Status', d => d.state === 'never' ? 'Not on record' : d.state === 'failed' ? 'Failed' : d.state],
+    ['Last passed', d => d.last ? d.last.inspected_on : ''], ['Due', d => d.due ? isoDay(d.due) : ''], ['Days left', d => d.left ?? '']]));
+  if (what === 'register') downloadText(`inspection-register-${stamp()}.csv`, toCSV([...S.inspections].filter(i => assetById(i.asset_id)).sort((x, y) => String(y.inspected_on).localeCompare(String(x.inspected_on))), [
+    ['Date', i => i.inspected_on], ['Motor', i => tagOf(i.asset_id)], ['Serial', i => assetById(i.asset_id)?.serial || ''], ['Model', i => assetById(i.asset_id)?.model || ''], ['WLL kg', i => assetById(i.asset_id)?.wll_kg ?? ''],
+    ['Type', i => KIND_LABEL[i.kind]], ['Result', i => i.result], ['Inspector', i => i.inspector_name || nameOf(i.created_by)],
+    ['Failed items', i => Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k).join('; ')], ['Chain gauge mm', i => i.gauge_mm ?? ''], ['Wear limit mm', i => i.gauge_max_mm ?? ''],
+    ['Test load kg', i => i.test_load_kg ?? ''], ['Notes', i => i.notes || '']]));
+  if (what === 'repairs') downloadText(`repairs-${stamp()}.csv`, toCSV([...S.repair_jobs].filter(j => assetById(j.asset_id)).sort((x, y) => String(y.sent_at).localeCompare(String(x.sent_at))), [
+    ['Light', j => tagOf(j.asset_id)], ['Model', j => assetById(j.asset_id)?.model || ''], ['Sent to', j => j.repairer], ['Job no.', j => j.job_no || ''], ['Fault', j => j.fault || ''],
+    ['Sent', j => j.sent_at], ['Expected back', j => j.expected_back || ''], ['Back', j => j.returned_at || ''], ['Days away', j => j.returned_at ? Math.round((new Date(j.returned_at) - new Date(j.sent_at)) / DAY) : daysAway(j)],
+    ['Overdue', j => jobOverdue(j) ? 'YES' : ''], ['Outcome', j => j.outcome || ''], ['Cost', j => j.cost ?? ''], ['Notes', j => j.notes || '']]));
+  if (what === 'costs') downloadText(`repair-costs-${stamp()}.csv`, toCSV(costRows(), [
+    ['Light', r => r.a.tag], ['Model', r => r.a.model], ['Total spent', r => r.total.toFixed(2)], ['Parts', r => r.parts.toFixed(2)], ['Parts fitted', r => r.partsQty], ['Unpriced parts', r => r.unpriced],
+    ['Repairer bills', r => r.repairs.toFixed(2)], ['Repair jobs', r => r.jobs], ['Faults (all time)', r => r.faults], ['Faults (12 months)', r => r.faults12], ['Problem unit', r => r.faults12 >= PROBLEM_FAULTS ? 'YES' : ''], ['Status', r => r.a.status]]));
+  if (what === 'parts') downloadText(`spare-parts-${stamp()}.csv`, toCSV(filteredParts(), [
+    ['Part', p => p.name], ['Make', p => p.make], ['Fits', p => p.fits], ['Supplier code', p => p.supplier_code], ['Part number', p => p.part_number],
+    ['In stock', p => p.quantity], ['Low-stock alert at', p => p.min_qty || ''], ['Price each', p => p.unit_price ?? ''], ['Stock value', p => hasH(p.unit_price) ? (p.quantity * p.unit_price).toFixed(2) : ''],
+    ['Condition', p => p.condition], ['Location', p => p.location], ['Notes', p => p.notes]]));
+  if (what === 'moves') downloadText(`parts-movements-${stamp()}.csv`, toCSV([...S.part_moves].sort(byNewest), [
+    ['Date', m => fmtDT(m.created_at)], ['Part', m => partById(m.part_id)?.name || ''], ['What', m => MOVE[m.kind] || m.kind], ['Qty', m => m.change],
+    ['Person', m => m.person_name || ''], ['Motor', m => m.asset_id ? tagOf(m.asset_id) : ''], ['Price each', m => partById(m.part_id)?.unit_price ?? ''],
+    ['Notes', m => m.notes?.startsWith('Return of ') ? '' : m.notes], ['Logged by', m => nameOf(m.created_by)]]));
+  if (what === 'logs') {
+    const from = opts.from ? new Date(opts.from + 'T00:00:00') : new Date(0), to = opts.to ? new Date(opts.to + 'T23:59:59') : new Date();
+    const rows = S.logs.filter(l => { const d = new Date(l.created_at); return d >= from && d <= to; }).sort(byNewest);
+    downloadText(`maintenance-log-${stamp()}.csv`, toCSV(rows, [
+      ['Date', l => fmtDT(l.created_at)], ['Asset tag', l => tagOf(l.asset_id)], ['Model', l => assetById(l.asset_id)?.model || ''], ['Type', l => l.kind], ['Summary', l => l.title],
+      ['Details', l => l.details], ['Location', l => l.location || ''], ['Parts', l => l.parts], ['Status after', l => l.status_after], ['By', l => whoOf(l)], ['Photos', l => l.photos?.length || 0]]));
+    toast(`${rows.length} entries exported`);
+  }
+}
+const filteredAssetsAll = () => [...S.assets].sort((x, y) => F_SORT.compare(String(x.tag), String(y.tag)));
+const faultRows = () => S.assets.filter(a => BAD.includes(a.status)).sort((x, y) => new Date(x.faulty_since || 0) - new Date(y.faulty_since || 0));
+function printDoc(html) { $('#print').innerHTML = html; setTimeout(() => window.print(), 50); }
+function printAsset(a) {
+  const logs = S.logs.filter(l => l.asset_id === a.id).sort(byNewest), ins = inspFor(a.id);
+  printDoc(`<h1>${h(a.tag)} — ${h(a.make)} ${h(a.model)}</h1>
+  <div class="sub">Serial ${h(a.serial || '—')} · WLL ${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : '—'} · Chain ${hasH(a.chain_length_m) ? a.chain_length_m + ' m' : '—'} · ${h(a.location || '—')} · Status: ${h(a.status)}${isMotor(a) ? ' · ' + (cleared(a) ? 'Cleared for use' : 'NOT cleared for use') : ''}<br>Printed ${fmtDT(new Date())} by ${h(S.profile.name)}</div>
+  <h2>Inspections & load tests (${ins.length})</h2>
+  <table><thead><tr><th>Date</th><th>Type</th><th>Result</th><th>Inspector</th><th>Chain</th><th>Test load</th><th>Failed items / notes</th></tr></thead><tbody>
+  ${ins.map(i => `<tr><td>${h(i.inspected_on)}</td><td>${h(KIND_LABEL[i.kind])}</td><td><b>${h(i.result)}</b></td><td>${h(i.inspector_name || '')}</td><td>${hasH(i.gauge_mm) ? i.gauge_mm + ' mm' + (hasH(i.gauge_max_mm) ? ' / ' + i.gauge_max_mm : '') : ''}</td><td>${hasH(i.test_load_kg) ? F_NUM.format(i.test_load_kg) + ' kg' : ''}</td><td>${h(Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k).join('; '))}${i.notes ? '<br>' + h(i.notes) : ''}</td></tr>`).join('') || '<tr><td colspan="7">None recorded</td></tr>'}
+  </tbody></table>
+  <h2>Maintenance history (${logs.length})</h2>
+  <table><thead><tr><th>Date</th><th>Type</th><th>Summary & details</th><th>Parts</th><th>Status</th><th>By</th></tr></thead><tbody>
+  ${logs.map(l => `<tr><td>${fmtDT(l.created_at)}</td><td>${h(l.kind)}</td><td><b>${h(l.title)}</b>${l.details ? '<br>' + h(l.details).replace(/\n/g, '<br>') : ''}</td><td>${h(l.parts)}</td><td>${h(l.status_after || '')}</td><td>${h(whoOf(l))}</td></tr>`).join('') || '<tr><td colspan="6">No entries</td></tr>'}
+  </tbody></table>`);
+}
+function printRegister() {
+  const rows = [...S.inspections].filter(i => assetById(i.asset_id)).sort((x, y) => String(y.inspected_on).localeCompare(String(x.inspected_on)));
+  printDoc(`<h1>Inspection register</h1><div class="sub">${rows.length} inspections and load tests · Printed ${fmtDT(new Date())} by ${h(S.profile.name)}</div>
+  <table><thead><tr><th>Date</th><th>Motor</th><th>Serial</th><th>WLL</th><th>Type</th><th>Result</th><th>Inspector</th><th>Chain</th><th>Test load</th><th>Failed items</th></tr></thead><tbody>
+  ${rows.map(i => { const a = assetById(i.asset_id); return `<tr><td>${h(i.inspected_on)}</td><td>${h(a.tag)}</td><td>${h(a.serial || '')}</td><td>${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : ''}</td><td>${h(KIND_LABEL[i.kind])}</td><td><b>${h(i.result)}</b></td><td>${h(i.inspector_name || '')}</td><td>${hasH(i.gauge_mm) ? i.gauge_mm + ' mm' : ''}</td><td>${hasH(i.test_load_kg) ? F_NUM.format(i.test_load_kg) + ' kg' : ''}</td><td>${h(Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k.split(' (')[0]).join('; '))}</td></tr>`; }).join('') || '<tr><td colspan="10">None recorded</td></tr>'}
+  </tbody></table>`);
+}
+function printFaults() {
+  const rows = faultRows();
+  printDoc(`<h1>Fault report</h1><div class="sub">${rows.length} motors faulty, in repair or out of service · Printed ${fmtDT(new Date())}</div>
+  <table><thead><tr><th>Tag</th><th>Item</th><th>Status</th><th>Since</th><th>Days</th><th>Latest note</th><th>Location</th></tr></thead><tbody>
+  ${rows.map(a => { const l = lastActivity(a); const d = a.faulty_since ? daysSince(a.faulty_since) : ''; return `<tr><td>${h(a.tag)}</td><td>${h(a.make)} ${h(a.model)}</td><td>${h(a.status)}</td><td>${fmtDate(a.faulty_since)}</td><td>${d}${d >= CFG.FAULT_ALERT_DAYS ? ' ⚠' : ''}</td><td>${l ? h(l.title) : ''}</td><td>${h(a.location || '')}</td></tr>`; }).join('') || '<tr><td colspan="7">Nothing faulty</td></tr>'}
+  </tbody></table>`);
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+const ACT = {
+  'go': d => { location.hash = d.href; },
+  'nav-toggle': () => document.body.classList.toggle('nav-open'),
+  'nav-close': () => document.body.classList.remove('nav-open'),
+  'modal-close': closeModal,
+  'refresh': () => DEMO ? render() : sync(false),
+  'reload-app': () => location.reload(),
+  'recheck': () => boot(),
+  'signout': () => api.signOut(),
+  'auth-tab': d => { S.authTab = d.tab; render(); },
+  'forgot': async () => {
+    const email = $('[name=email]')?.value || prompt('Your email address:'); if (!email) return;
+    try { await api.resetPw(email); toast('Check your email for a reset link'); } catch (e) { toast(errMsg(e), 'bad'); }
+  },
+  'cam-start': camStart, 'cam-stop': camStop, 'cam-torch': camTorch, 'cam-zoom': camZoom,
+  'add-from-code': d => assetModal(null, { tag: d.code }),
+  'asset-new': () => assetModal(),
+  'asset-edit': d => assetModal(assetById(d.id)),
+  'asset-del': d => del('assets', d.id, 'Delete this motor and its whole history, including inspections? This can\'t be undone.', () => { S.logs = S.logs.filter(l => l.asset_id !== d.id); S.schedules = S.schedules.filter(s => s.asset_id !== d.id); location.hash = '#/assets'; }),
+  'log-new': d => logModal(d.id, { kind: d.kind }),
+  'log-del': d => del('logs', d.id, 'Delete this log entry?'),
+  'done': d => { const s = S.schedules.find(x => x.id === d.sid); logModal(d.aid, { kind: 'Service', schedule_id: s.id, title: s.task }); },
+  'sched-new': d => schedModal(d),
+  'sched-del': d => del('schedules', d.id, 'Delete this schedule? Past service entries stay in the history.'),
+  'manual-new': d => manualModal(d),
+  'manual-open': d => openManual(d.id),
+  'manual-del': d => del('manuals', d.id, 'Delete this manual?'),
+  'photo-open': d => openFile('photos', d.p),
+  'print-asset': d => printAsset(assetById(d.id)),
+  'print-faults': printFaults,
+  'export': d => exportCSV(d.what),
+  'due-tab': d => { S.dueTab = d.tab; render(); },
+  'assets-more': () => { assetLimit = 1e9; const el = $('#asset-list'); if (el) el.innerHTML = assetTable(); },
+  'part-new': () => partModal(),
+  'part-edit': d => partModal(S.parts.find(x => x.id === d.id)),
+  'part-del': d => del('parts', d.id, 'Delete this part and its stock history?', () => { S.part_moves = S.part_moves.filter(m => m.part_id !== d.id); location.hash = '#/parts'; }),
+  'checkout': d => checkoutModal(d),
+  'restock': d => restockModal(S.parts.find(x => x.id === d.id)),
+  'part-return': d => returnPart(d.id),
+  'inspect': d => inspModal(d.id, d.kind || 'Periodic'),
+  'insp-tab': d => { inspTab = d.tab; render(); },
+  'print-register': printRegister,
+  'repair-send': d => sendModal(d.id),
+  'repair-return': d => returnModal(d.id),
+  'order-list': () => orderModal(),
+  ...ORDER,
+  'move-del': d => undoMove(d.id),
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  if (t.tagName === 'A' && t.getAttribute('href') === '#') e.preventDefault();
+  if (t.id === 'modal' && e.target !== t) return;
+  ACT[t.dataset.act]?.(t.dataset, t, e);
+});
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal.open')) closeModal(); });
+
+/* ---------- USB / Bluetooth scanner guns (they 'type' fast and finish with Enter or Tab) ---------- */
+const gun = { buf: '', first: 0, last: 0 };
+function isTyping(el) { return el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)); }
+document.addEventListener('keydown', e => {
+  if (!S.profile || S.profile.role === 'pending' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const el = e.target;
+  // Scanner ending with Tab inside the Scan box: treat Tab like Enter
+  if (e.key === 'Tab' && el.id === 'code-input' && el.value.trim()) { e.preventDefault(); el.form.requestSubmit(); return; }
+  if (isTyping(el) || $('#modal.open')) { gun.buf = ''; return; }
+  const now = performance.now();
+  if (now - gun.last > 80) { gun.buf = ''; gun.first = now; }       // a human-speed gap starts over
+  gun.last = now;
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    const code = gun.buf, fast = code.length >= 3 && (now - gun.first) / code.length < 40;
+    gun.buf = '';
+    if (fast) { e.preventDefault(); lookup(code); }
+    return;
+  }
+  if (e.key.length === 1) gun.buf += e.key;
+});
+
+/* ---------- beep: high = found, low double = not found ---------- */
+let audioCtx = null;
+function beep(ok) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const tones = ok ? [[1320, 0, .09]] : [[220, 0, .14], [220, .2, .14]];
+    for (const [f, at, len] of tones) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + at;
+      o.type = ok ? 'sine' : 'square'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(ok ? .25 : .12, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + len);
+      o.start(t); o.stop(t + len + .02);
+    }
+  } catch {}
+}
+
+const FORMS = {
+  async signin(f) { const fd = new FormData(f); await api.signIn(fd.get('email').trim(), fd.get('password')); },
+  async signup(f) {
+    const fd = new FormData(f); const r = await api.signUp(fd.get('name').trim(), fd.get('email').trim(), fd.get('password'));
+    if (!r.session) { S.authTab = 'signin'; render(); toast('Account created — check your email to confirm, then sign in.'); }
+  },
+  async newpw(f) { await api.setPw(new FormData(f).get('password')); S.recovery = false; toast('Password updated'); history.replaceState(null, '', location.pathname + '#/dashboard'); await boot(); },
+  async lookup(f) { lookup(new FormData(f).get('code')); f.reset(); },
+  inspect: submitInspect, 'send-repair': submitSend, 'return-repair': submitReturn, 'link-code': linkCode, part: submitPart, checkout: submitCheckout, restock: submitRestock, asset: submitAsset, log: submitLog, sched: submitSched, manual: submitManual,
+  async 'export-logs'(f) { const fd = new FormData(f); exportCSV('logs', { from: fd.get('from'), to: fd.get('to') }); },
+};
+document.addEventListener('submit', async e => {
+  const f = e.target; const fn = FORMS[f.dataset.form]; if (!fn) return;
+  e.preventDefault();
+  const btn = f.querySelector('button:not([type=button])'); const label = btn?.innerHTML;
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try { await fn(f); }
+  catch (err) { const box = $('#auth-err'); if (box && f.closest('.auth')) box.textContent = errMsg(err); else toast(errMsg(err), 'bad'); }
+  finally { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = label; } }
+});
+let searchTimer = 0;
+document.addEventListener('input', e => {
+  const k = e.target.dataset.filter; if (!k) return;
+  if (k === 'partQ') { S.partQ = e.target.value; $('#part-list').innerHTML = partTable(); return; }
+  if (k === 'manualQ') { S.manualQ = e.target.value; const keep = e.target.selectionStart; render(); const i = $('[data-filter=manualQ]'); i.focus(); i.setSelectionRange(keep, keep); return; }
+  S.filter[k] = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(() => { assetLimit = 150; const el = $('#asset-list'); if (el) el.innerHTML = assetTable(); }, 120);
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.photoScan !== undefined) return scanPhoto(t);
+  if (t.dataset.inspKind !== undefined) { drawInspBody(t.value); return; }
+  if (t.closest && t.closest('form[data-insp]')) inspResult();
+  if (t.dataset.costModel !== undefined) { costModel = t.value; $('#cost-list').innerHTML = costTable(); return; }
+  if (t.dataset.orderOn !== undefined) { order.rows[+t.dataset.orderOn].on = t.checked; drawOrder(); return; }
+  if (t.dataset.orderQty !== undefined) { order.rows[+t.dataset.orderQty].qty = Math.max(0, parseInt(t.value || '0', 10) || 0); drawOrder(); return; }
+  if (t.dataset.orderAdd !== undefined) { if (t.value) { order.rows.push({ pid: t.value, qty: 1, on: true }); drawOrder(); } return; }
+  if (t.dataset.afterScan !== undefined) { S.afterScan = t.value; try { localStorage.setItem('cl-after-scan', t.value); } catch {} toast('Saved for this device'); return; }
+  if (t.dataset.filter === 'partMake') { S.partMake = t.value; $('#part-list').innerHTML = partTable(); return; }
+  if (t.dataset.filter && t.tagName === 'SELECT') { S.filter[t.dataset.filter] = t.value; $('#asset-list').innerHTML = assetTable(); return; }
+  if (t.dataset.roleFor) {
+    try { const p = await api.update('profiles', t.dataset.roleFor, { role: t.value }); Object.assign(S.profiles.find(x => x.id === p.id), p); toast('Access updated'); render(); }
+    catch (err) { toast(errMsg(err), 'bad'); render(); }
+  }
+  if (t.name === 'kind' && t.closest('[data-form=log]')) {
+    const f = t.closest('form'), cur = t.dataset.cur;
+    const st = t.value === 'Fault' ? (BAD.includes(cur) ? cur : 'Faulty') : t.value === 'Repair' ? 'OK' : cur;
+    f.status_after.value = st;
+    $('#sched-field').hidden = !(t.value === 'Service' && f.schedule_id.options.length > 1);
+  }
+  if (t.name === 'scope' && t.closest('[data-form=sched]')) { $('#scope-model').hidden = t.value !== 'model'; $('#scope-asset').hidden = t.value !== 'asset'; }
+});
+/* back to the app: refresh at most once a minute, check for a new version every 5 minutes */
+let lastVersionCheck = 0;
+async function checkVersion() {
+  if (DEMO || S.updateReady || Date.now() - lastVersionCheck < 5 * 60e3) return;
+  lastVersionCheck = Date.now();
+  try {
+    const v = await (await fetch('version.json?t=' + Date.now(), { cache: 'no-store' })).json();
+    if (v.build && v.build !== BUILD) { S.updateReady = true; if (!$('#modal.open') && !qr) render(); }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (S.booted) saveCache(); return; }
+  checkVersion();
+  if (DEMO || !S.profile || S.profile.role === 'pending' || qr) return;
+  if (Date.now() - (S.lastSync || 0) > 60e3) sync(true);
+});
+window.addEventListener('online', () => { if (S.profile && S.profile.role !== 'pending') sync(true); });
+window.addEventListener('offline', () => { S.offline = true; if (!$('#modal.open') && !qr) render(); });
+setInterval(checkVersion, 30 * 60e3);
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+/* ---------- start ---------- */
+if (sb) {
+  sb.auth.onAuthStateChange((ev, session) => {
+    if (ev === 'PASSWORD_RECOVERY') { S.recovery = true; setTimeout(render, 0); return; }
+    if (ev === 'SIGNED_IN' && session?.user?.id !== S.user?.id) setTimeout(boot, 0);
+    if (ev === 'SIGNED_OUT') { clearCaches(); Object.assign(S, { user:null, profile:null, assets:[], logs:[], schedules:[], manuals:[], profiles:[] }); setTimeout(render, 0); }
+  });
+}
+if (!DEMO && !window.supabase) { $('#app').innerHTML = `<div class="center muted" style="padding:0 24px;text-align:center">${navigator.onLine ? 'Could not load the database library. Reload to try again.' : 'No signal. Open ChainLog once with signal on this device and it will work offline after that.'}</div>`; }
+else boot();
+</script>
+</body>
+</html>
