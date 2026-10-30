@@ -106,6 +106,9 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .seg input:checked+.seg-fail{background:rgba(255,93,93,.18);border-color:var(--bad);color:var(--bad)}
 .seg input:checked+.seg-na{background:var(--panel2);border-color:#47506a;color:var(--text)}
 .seg input:focus-visible+span{outline:2px solid var(--accent)}
+.ci-note{margin-top:8px;padding:7px 10px;min-height:34px;font-size:13px}
+.ci-add{display:block;margin:6px 0 0 auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:2px 0}
+.ci-add:hover{color:var(--text)}
 .d-overdue{color:var(--bad);background:rgba(255,93,93,.13)}
 .d-soon{color:var(--warn);background:rgba(245,165,36,.13)}
 .d-ok{color:var(--ok);background:rgba(62,207,142,.12)}
@@ -234,7 +237,7 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
    ============================================================ */
 const CFG = Object.assign({ SUPABASE_URL:'', SUPABASE_ANON_KEY:'', APP_NAME:'ChainLog', FAULT_ALERT_DAYS:60, DUE_SOON_DAYS:14, INSPECTION_DAYS:182, LOADTEST_DAYS:365 }, window.CHAINLOG_CONFIG || {});
 const DEMO = !CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY;
-const BUILD = '2026-10-30.2';   // bump together with version.json on every release
+const BUILD = '2026-10-30.3';   // bump together with version.json on every release
 const sb = (!DEMO && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 
 const BAD = ['Faulty','In repair','Out of service'];
@@ -413,19 +416,19 @@ function demoSeed() {
     { id: uid(), tag: 'CTRL 01', serial: 'K8-0042', category: 'Controller', make: 'Generic', model: '8-way motor controller', location: 'Motor cage', status: 'OK', notes: '', created_at: ago(600), updated_at: ago(1), faulty_since: null },
   ];
   const T = t => a.find(x => x.tag === t).id;
-  const pass = Object.fromEntries(CHECKLIST.map(c => [c, 'pass']));
+  const pass = Object.fromEntries(CHECKLIST.map(c => [c.label, 'pass']));
   const I = (tag, kind, dAgo, result, extra = {}) => ({ id: uid(), asset_id: T(tag), kind, inspected_on: day(dAgo), checklist: kind === 'Periodic' ? { ...pass } : { 'Held the test load': 'pass', 'Brake & limits under load': 'pass', 'No abnormal noise/heat': 'pass' }, result, notes: 'All good', photos: [], inspector_name: 'Sam (tech)', created_by: 'demo-tech', created_at: ago(dAgo), gauge_mm: kind === 'Periodic' ? 141.2 : null, gauge_max_mm: kind === 'Periodic' ? 143.5 : null, test_load_kg: kind === 'Load test' ? 1250 : null, ...extra });
   const inspections = [
     I('CM 01','Periodic',40,'Pass'), I('CM 01','Load test',100,'Pass'),
     I('CM 02','Periodic',170,'Pass'), I('CM 02','Load test',340,'Pass'),
     I('CM 03','Periodic',210,'Pass'), I('CM 03','Load test',120,'Pass'),
-    I('CM 04','Periodic',9,'Fail', { checklist: { ...pass, 'Brake (holds, no slip)': 'fail' }, notes: 'Brake slipping under load, needs brake kit' }), I('CM 04','Load test',200,'Pass'),
+    I('CM 04','Periodic',9,'Fail', { checklist: { ...pass, 'Clean & examine brake (remove and refit)': 'fail' }, item_notes: { 'Clean & examine brake (remove and refit)': 'Brake pads glazed, slipping' }, brake_gap_mm: 0.7, notes: 'Needs brake kit' }), I('CM 04','Load test',200,'Pass'),
     I('CM 05','Periodic',60,'Pass', { gauge_max_mm: 114.0, gauge_mm: 112.6 }), I('CM 05','Load test',380,'Pass', { test_load_kg: 625 }),
-    I('CM 07','Periodic',20,'Pass'), I('CM 07','Load test',30,'Pass', { test_load_kg: 2500 }),
+    I('CM 07','Periodic',20,'Pass', { flagged: true, refer_to: 'Jason I', item_notes: { __flag: 'Roadcase wheel loose' }, roadcase: 'Wheel loose' }), I('CM 07','Load test',30,'Pass', { test_load_kg: 2500 }),
   ];
   const L = (tag, kind, title, details, daysAgo, extra = {}) => ({ id: uid(), asset_id: T(tag), kind, title, details, parts: '', status_after: null, photos: [], created_by: 'demo-tech', created_at: ago(daysAgo), ...extra });
   const logs = [
-    L('CM 04','Inspection','Periodic inspection: FAIL','Failed: Brake (holds, no slip)\nBrake slipping under load, needs brake kit',9,{ status_after: 'Out of service' }),
+    L('CM 04','Inspection','Periodic inspection: FAIL','Failed: Clean & examine brake (remove and refit) (Brake pads glazed, slipping)\nBrake gap 0.7 mm — outside 0.2–0.5 mm\nNeeds brake kit',9,{ status_after: 'Out of service' }),
     L('CM 06','Fault','Chain jumping on the liftwheel','Chain skips under load going up. Pulled from stock.',75,{ status_after: 'Faulty' }),
     L('CM 01','Inspection','Periodic inspection: PASS','Chain: 141.2 mm (limit 143.5)\nAll good',40),
     L('CM 07','Inspection','Load test: PASS','Test load 2,500 kg\nAll good',30),
@@ -632,7 +635,7 @@ function shell(p, body) {
     <aside class="side">
       <div class="brand">${LOGO}${h(CFG.APP_NAME)}</div>
       <nav>
-        ${item('dashboard','home','Dashboard', lf)}
+        ${item('dashboard','home','Dashboard', lf + flaggedMotors().length)}
         ${item('scan','scan','Scan')}
         ${item('assets','box','Motors')}
         ${item('inspections','check','Inspections', motorsOverdue().length)}
@@ -724,6 +727,7 @@ function vDashboard() {
         ${soon.length > 10 ? `<p style="margin-top:10px"><a href="#/inspections" class="small muted">See all ${soon.length} →</a></p>` : ''}` : '<p class="empty">Nothing coming due.</p>'}
     </section>
   </div>
+  ${(() => { const fm = flaggedMotors(); return fm.length ? `<section class="card" style="margin-top:16px"><h2>⚑ Flagged for follow-up (${fm.length})</h2><ul class="list">${fm.map(a => { const f = openFlag(a.id); return `<li><a href="#/asset/${a.id}" class="tag">${h(a.tag)}</a><span>${h(f.item_notes?.__flag || '')}</span><span class="spacer"></span><span class="muted small">${f.refer_to ? '→ ' + h(f.refer_to) + ' · ' : ''}${fmtDate(f.inspected_on + 'T12:00:00')}</span></li>`; }).join('')}</ul></section>` : ''; })()}
   <section class="card" style="margin-top:16px"><h2>Recent activity</h2>
     ${S.logs.length ? `<ul class="tl">${S.logs.slice(0, 8).map(l => logItem(l, true)).join('')}</ul>` : '<p class="empty">No entries yet. Scan a motor to start.</p>'}
   </section>`;
@@ -987,6 +991,7 @@ function vAsset(id) {
     </div>
   </div>
   ${clearanceBanner(a)}
+  ${flagBanner(a)}
   ${long ? `<div class="alert warn"><div class="alert-h">${ic('alert')} Faulty for ${daysSince(a.faulty_since)} days — over the ${CFG.FAULT_ALERT_DAYS}-day limit</div><p class="small">Chase the repair or retire it.</p></div>` : ''}
   <section class="card"><div class="kv">
     ${kv('Asset tag', `<span class="mono">${h(a.tag)}</span>`)}${kv('Serial', `<span class="mono">${h(a.serial || '—')}</span>`)}${kv('Type', h(a.category))}${kv('Location', h(a.location || '—'))}
@@ -1515,20 +1520,27 @@ const ORDER = {
 /* ============================================================
    INSPECTIONS & LOAD TESTS
    ============================================================ */
-const CHECKLIST = CFG.CHECKLIST || [
-  'Hook & safety latch (no stretch, cracks or wear; latch closes)',
-  'Hook swivel / rotation',
-  'Load chain (no twists, kinks, nicks, corrosion or stretch)',
-  'Chain lubrication',
-  'Liftwheel, chain guide & chain entry',
-  'Chain bag / container & end stop',
-  'Brake (holds, no slip)',
-  'Upper & lower limit switches',
-  'Controls & direction (up/down correct, e-stop)',
-  'Power & control cables, plugs & strain relief',
-  'Body, fasteners & suspension point',
-  'WLL & ID labels legible',
-];
+/* Standard periodic inspection — matches the Powa "Motor Record" form. yesno items don't fail the motor. */
+const CHECKLIST = (CFG.CHECKLIST || [
+  { label: 'Clean chain', hint: 'Report if it was removed from the motor for cleaning' },
+  { label: 'Chain orientation correct', hint: 'Weld on link to face away from the lift wheel' },
+  { label: 'Check cable and plug', hint: 'Report on condition' },
+  { label: 'Oil chain', hint: 'Using approved method' },
+  { label: 'Check moisture/corrosion', hint: 'Record condition of internals of motor casing' },
+  { label: 'Check casing', hint: 'Check for damage, check seals for leaks' },
+  { label: 'Weather bag', hint: 'Weather bag in case?', yesno: true },
+  { label: 'Clean & examine brake (remove and refit)', hint: 'Remove and clean the brake with brake cleaner' },
+  { label: 'Lube limit switch shaft', hint: 'Small drops of 3 in 1 oil' },
+  { label: 'Examine hooks', hint: 'Clearance 33.3mm' },
+  { label: 'Check bolt torque', hint: '105 N-m torque' },
+  { label: 'Check upper limits', hint: '8-10 links' },
+  { label: 'Check lower limits', hint: '8-10 links' },
+  { label: 'Seal end casing', hint: '' },
+  { label: 'Check load limit 100%', hint: '' },
+  { label: 'Test & Tag', hint: '' },
+]).map(c => typeof c === 'string' ? { label: c, hint: '' } : c);
+const BRAKE_MIN = CFG.BRAKE_GAP_MIN ?? 0.2, BRAKE_MAX = CFG.BRAKE_GAP_MAX ?? 0.5;
+const CHAIN_LENGTHS = CFG.CHAIN_LENGTHS || [10, 15, 20, 25, 30, 40];
 const INSP_DAYS = CFG.INSPECTION_DAYS || 182, LOAD_DAYS = CFG.LOADTEST_DAYS || 365;
 const KIND_LABEL = { 'Periodic': 'Periodic inspection', 'Load test': 'Load test' };
 const isMotor = a => a.category === 'Chain motor' && a.status !== 'Retired';
@@ -1556,6 +1568,22 @@ const motorsOverdue = () => [...new Set(dueAll().filter(dueBad).map(d => d.a))];
 function cleared(a) { return isMotor(a) && a.status === 'OK' && !dueBad(dueOf(a, 'Periodic')) && !dueBad(dueOf(a, 'Load test')); }
 const inspPill = d => d.state === 'failed' ? '<span class="pill d-overdue">Failed</span>' : d.state === 'never' ? '<span class="pill d-overdue">Not on record</span>' : d.state === 'overdue' ? '<span class="pill d-overdue">Overdue</span>' : d.state === 'soon' ? '<span class="pill d-soon">Due soon</span>' : '<span class="pill d-ok">OK</span>';
 const dueTextI = d => d.state === 'failed' ? `Failed ${fmtDate(d.failed.inspected_on + 'T12:00:00')} — needs a new passing ${d.kind === 'Load test' ? 'load test' : 'inspection'}` : d.state === 'never' ? 'No passed ' + (d.kind === 'Load test' ? 'load test' : 'inspection') + ' on record' : d.left < 0 ? `${-d.left} days overdue (was due ${fmtDate(d.due)})` : `due ${fmtDate(d.due)} · ${d.left} days`;
+const openFlag = id => inspFor(id).find(i => i.flagged && !i.flag_resolved_at);
+const flaggedMotors = () => S.assets.filter(a => a.status !== 'Retired' && openFlag(a.id));
+function flagBanner(a) {
+  const f = openFlag(a.id); if (!f) return '';
+  return `<div class="alert warn"><div class="alert-h">${ic('alert')} Flagged ${fmtDate(f.inspected_on + 'T12:00:00')} by ${h(f.inspector_name || '')}${f.refer_to ? ' · referred to ' + h(f.refer_to) : ''}</div>
+    <div class="row"><p class="small" style="flex:1">${h(f.item_notes?.__flag || 'Needs follow-up')}</p><button class="btn sm" data-act="flag-resolve" data-id="${f.id}">${ic('check')} Mark resolved</button></div></div>`;
+}
+async function resolveFlag(id) {
+  const i = S.inspections.find(x => x.id === id); if (!i) return;
+  const note = prompt('What was done? (saved to the motor\'s history)'); if (note === null) return;
+  try {
+    Object.assign(i, await api.update('inspections', id, { flag_resolved_at: new Date().toISOString() }));
+    S.logs.unshift(await api.insert('logs', { asset_id: i.asset_id, kind: 'Note', title: 'Flag resolved', details: [i.item_notes?.__flag ? 'Flag: ' + i.item_notes.__flag : '', note.trim()].filter(Boolean).join('\n'), inspection_id: id, photos: [], created_by: S.user.id }));
+    toast('Flag resolved'); render();
+  } catch (e) { toast(errMsg(e), 'bad'); }
+}
 const resPill = r => `<span class="pill ${r === 'Pass' ? 's-ok' : 's-faulty'}">${r === 'Pass' ? 'Pass' : 'Fail'}</span>`;
 
 function inspectionCard(a) {
@@ -1565,7 +1593,7 @@ function inspectionCard(a) {
     ${a.status === 'Retired' ? '' : `<button class="btn sm" data-act="inspect" data-id="${a.id}" data-kind="${k}">${k === 'Load test' ? 'Load test' : 'Inspect'}</button>`}</li>`; };
   return `<section class="card"><h2>Inspections</h2><ul class="list">${row('Periodic')}${row('Load test')}</ul>
     ${ins.length ? `<h2 style="margin:16px 0 6px">History</h2><ul class="list">${ins.map(i => { const fails = Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k.split(' (')[0]);
-      return `<li><div style="flex:1;min-width:150px"><div>${KIND_LABEL[i.kind]} · ${fmtDate(i.inspected_on + 'T12:00:00')}</div><div class="muted small">${h(i.inspector_name || nameOf(i.created_by))}${hasH(i.gauge_mm) ? ` · chain ${i.gauge_mm} mm${hasH(i.gauge_max_mm) ? ' / limit ' + i.gauge_max_mm : ''}` : ''}${hasH(i.test_load_kg) ? ` · test ${F_NUM.format(i.test_load_kg)} kg` : ''}${fails.length ? ` · <span style="color:var(--bad)">failed: ${h(fails.join(', '))}</span>` : ''}</div></div>${resPill(i.result)}</li>`; }).join('')}</ul>` : ''}
+      return `<li><div style="flex:1;min-width:150px"><div>${KIND_LABEL[i.kind]} · ${fmtDate(i.inspected_on + 'T12:00:00')}</div><div class="muted small">${h(i.inspector_name || nameOf(i.created_by))}${hasH(i.gauge_mm) ? ` · chain ${i.gauge_mm} mm${hasH(i.gauge_max_mm) ? ' / limit ' + i.gauge_max_mm : ''}` : ''}${hasH(i.brake_gap_mm) ? ` · brake ${i.brake_gap_mm} mm` : ''}${hasH(i.test_load_kg) ? ` · test ${F_NUM.format(i.test_load_kg)} kg` : ''}${i.flagged ? ` · ⚑${i.flag_resolved_at ? ' (resolved)' : ''}` : ''}${fails.length ? ` · <span style="color:var(--bad)">failed: ${h(fails.join(', '))}</span>` : ''}</div></div>${resPill(i.result)}</li>`; }).join('')}</ul>` : ''}
   </section>`;
 }
 function clearanceBanner(a) {
@@ -1584,24 +1612,30 @@ function inspModal(aid, kind = 'Periodic') {
   const a = assetById(aid); if (!a) return;
   if (a.category !== 'Chain motor') return toast('Inspections are for chain motors', 'warn');
   inspAid = aid;
-  openModal(`Inspect — ${a.tag}`, `<form data-form="inspect" data-insp>${peopleList()}<input type="hidden" name="asset_id" value="${a.id}">
+  openModal(`Motor record — ${a.tag}`, `<form data-form="inspect" data-insp>${peopleList()}<input type="hidden" name="asset_id" value="${a.id}">
+    <div class="note"><b class="mono">${h(a.tag)}</b>${a.serial ? ` · serial <span class="mono">${h(a.serial)}</span>` : ''} · ${h([a.make, a.model].filter(Boolean).join(' '))}${hasH(a.wll_kg) ? ' · ' + F_NUM.format(a.wll_kg) + ' kg' : ''}</div>
     <div class="fgrid">
       <div class="field"><label>Type</label><select name="kind" data-insp-kind><option value="Periodic" ${kind === 'Periodic' ? 'selected' : ''}>Periodic inspection</option><option value="Load test" ${kind === 'Load test' ? 'selected' : ''}>Load test</option></select></div>
-      <div class="field"><label>Date</label><input name="inspected_on" type="date" required value="${isoDay()}" max="${isoDay()}"></div>
+      <div class="field"><label>Date of inspection</label><input name="inspected_on" type="date" required value="${isoDay()}" max="${isoDay()}"></div>
       <div class="field full"><label>Inspected by</label><input name="inspector_name" list="dl-people" required value="${h(S.profile.name)}" autocomplete="off"></div>
     </div>
     <div id="insp-body"></div>
-    <div class="field"><label>Notes</label><textarea name="notes" required placeholder="What you checked, anything to keep an eye on, or why it failed"></textarea></div>
-    <div class="field"><label>Photos (optional)</label><input name="photos" type="file" accept="image/*" multiple></div>
+    <div class="field"><label id="notes-label">General comments</label><textarea name="notes" placeholder="Anything else worth recording"></textarea></div>
+    <div class="field"><label>Photos</label><input name="photos" type="file" accept="image/*" multiple></div>
     <div id="insp-result" class="note"></div>
-    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Save</button></div></form>`);
-  $('.modal-box').style.maxWidth = '680px';
+    <div class="modal-f"><button type="button" class="btn" data-act="modal-close">Cancel</button><button class="btn primary">Submit</button></div></form>`);
+  $('.modal-box').style.maxWidth = '700px';
   drawInspBody(kind);
 }
 const seg = (name, opts, req = true) => `<div class="seg">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}" ${req ? 'required' : ''}><span class="seg-${v}">${l}</span></label>`).join('')}</div>`;
+const itemRow = (c, i) => `<tr class="ci"><td><div>${h(c.label)}</div>${c.hint ? `<div class="muted small">${h(c.hint)}</div>` : ''}
+    <input name="n${i}" class="ci-note" placeholder="Comment${c.yesno ? '' : ' (required if Fail)'}" hidden autocomplete="off"></td>
+  <td>${seg('c' + i, c.yesno ? [['pass', 'Yes'], ['fail', 'No']] : [['pass', 'Pass'], ['fail', 'Fail'], ['na', 'N/A']])}<button type="button" class="ci-add" data-act="ci-note" data-i="${i}" title="Add a comment">＋ note</button></td></tr>`;
 function drawInspBody(kind) {
   const a = assetById(inspAid);
   const lim = hasH(a.gauge_max_mm) ? Number(a.gauge_max_mm) : null, links = a.gauge_links || 11;
+  $('#notes-label').textContent = kind === 'Load test' ? 'Notes' : 'General comments';
+  $('[name=notes]').required = kind === 'Load test';
   $('#insp-body').innerHTML = kind === 'Load test' ? `
     <div class="fgrid">
       <div class="field"><label>Working load limit</label><div class="note" style="margin:0">${hasH(a.wll_kg) ? F_NUM.format(a.wll_kg) + ' kg' : 'Not set — add it with Edit'}</div></div>
@@ -1612,56 +1646,97 @@ function drawInspBody(kind) {
       <tr><td>Brake and limit switches worked under load</td><td>${seg('lt_brake', [['pass', 'Yes'], ['fail', 'No']])}</td></tr>
       <tr><td>No abnormal noise, heat or vibration</td><td>${seg('lt_noise', [['pass', 'Yes'], ['fail', 'No']])}</td></tr>
     </tbody></table>`
-  : `<table class="tbl chk"><tbody>${CHECKLIST.map((c, i) => `<tr><td>${h(c)}</td><td>${seg('c' + i, [['pass', 'Pass'], ['fail', 'Fail'], ['na', 'N/A']])}</td></tr>`).join('')}</tbody></table>
+  : `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <label style="display:flex;gap:10px;align-items:center;margin:0;color:var(--text);font-size:14px"><input type="checkbox" name="flagged" data-flag style="width:auto;min-height:0"> ⚑ Flag issues <span class="muted small" style="font-weight:400">— alerts the team and adds it to the follow-up list</span></label>
+      <div id="flag-fields" hidden style="margin-top:12px"><div class="fgrid">
+        <div class="field full"><label>Comment</label><input name="flag_note" placeholder="What needs following up" autocomplete="off"></div>
+        <div class="field full" style="margin-bottom:0"><label>Refer to</label><input name="refer_to" list="dl-people" placeholder="Type to search" autocomplete="off"></div>
+      </div></div>
+    </div>
+    <div class="field"><label>Roadcase condition <span class="muted">— repair or report on missing foam, damaged wheels, extrusion, etc.</span></label><input name="roadcase" placeholder="e.g. Good / missing foam / wheel damaged" autocomplete="off"></div>
+    <table class="tbl chk"><tbody>
+      ${CHECKLIST.slice(0, 8).map((c, i) => itemRow(c, i)).join('')}
+      <tr><td><div>Brake clearance</div><div class="muted small">Record gap (minimum ${BRAKE_MIN} mm, maximum ${BRAKE_MAX} mm)</div></td>
+        <td><input name="brake_gap_mm" type="number" min="0" step="0.01" required inputmode="decimal" placeholder="mm" style="width:110px;text-align:right"></td></tr>
+      ${CHECKLIST.slice(8).map((c, i) => itemRow(c, i + 8)).join('')}
+    </tbody></table>
     <div class="fgrid" style="margin-top:12px">
-      <div class="field"><label>Chain gauge over ${links} links (mm)</label><input name="gauge_mm" type="number" min="0" step="0.01" required inputmode="decimal" placeholder="Measured length"></div>
+      <div class="field"><label>Chain gauge over ${links} links (mm) <span class="muted">— optional</span></label><input name="gauge_mm" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Measured length"></div>
       <div class="field"><label>Wear limit (mm)</label>${lim != null ? `<div class="note" style="margin:0">${lim} mm — from this motor's record</div><input type="hidden" name="gauge_max_mm" value="${lim}">`
         : `<input name="gauge_max_mm" type="number" min="0" step="0.01" inputmode="decimal" placeholder="From the manual"><label style="display:flex;gap:8px;align-items:center;margin-top:6px;color:var(--muted)"><input type="checkbox" name="save_limit" checked style="width:auto;min-height:0"> Save for all ${h(a.model || 'motors of this model')}</label>`}</div>
+      <div class="field"><label>Pass / fail</label><select name="result_override"><option value="">Work it out from the checks</option><option value="Fail">Fail this motor</option></select></div>
+      <div class="field"><label>Service label applied</label>${seg('service_label', [['pass', 'Yes'], ['fail', 'No']])}</div>
+      <div class="field"><label>Chain length (m)</label><input name="chain_length_m" type="number" min="0" step="any" inputmode="decimal" list="dl-chain" required value="${h(a.chain_length_m ?? '')}"><datalist id="dl-chain">${CHAIN_LENGTHS.map(v => `<option value="${v}">`).join('')}</datalist></div>
     </div>`;
   inspResult();
 }
 function inspCheck(f) {
   const fd = new FormData(f), kind = fd.get('kind');
-  const names = kind === 'Load test' ? ['lt_held', 'lt_brake', 'lt_noise'] : CHECKLIST.map((_, i) => 'c' + i);
-  const missing = names.filter(n => !fd.get(n)).length;
-  const fails = names.filter(n => fd.get(n) === 'fail').length;
-  const g = numOrNull(fd.get('gauge_mm')), lim = numOrNull(fd.get('gauge_max_mm'));
+  const names = kind === 'Load test' ? ['lt_held', 'lt_brake', 'lt_noise'] : [...CHECKLIST.map((_, i) => 'c' + i), 'service_label'];
+  const missing = names.filter(n => !fd.get(n)).length + (kind === 'Periodic' && fd.get('brake_gap_mm') === '' ? 1 : 0);
+  const failNames = kind === 'Load test' ? names.filter(n => fd.get(n) === 'fail') : CHECKLIST.map((c, i) => !c.yesno && fd.get('c' + i) === 'fail' ? 'c' + i : null).filter(Boolean);
+  const g = numOrNull(fd.get('gauge_mm')), lim = numOrNull(fd.get('gauge_max_mm')), gap = numOrNull(fd.get('brake_gap_mm'));
   const worn = kind === 'Periodic' && g != null && lim != null && g > lim;
-  return { kind, missing, fails, worn, g, lim, fd, names };
+  const gapBad = kind === 'Periodic' && gap != null && (gap < BRAKE_MIN || gap > BRAKE_MAX);
+  const forced = kind === 'Periodic' && fd.get('result_override') === 'Fail';
+  return { kind, missing, fails: failNames.length, failNames, worn, gapBad, gap, forced, g, lim, fd, names };
 }
 function inspResult() {
   const f = $('form[data-insp]'), el = $('#insp-result'); if (!f || !el) return;
   const c = inspCheck(f);
-  if (c.fails || c.worn) { el.style.color = 'var(--bad)'; el.innerHTML = `<b>FAIL</b> — ${[c.fails ? c.fails + ' item' + (c.fails > 1 ? 's' : '') + ' failed' : '', c.worn ? `chain worn past limit (${c.g} > ${c.lim} mm)` : ''].filter(Boolean).join(' and ')}. The motor will be tagged <b>Out of service</b>.`; }
-  else if (c.missing) { el.style.color = ''; el.textContent = `${c.missing} item${c.missing > 1 ? 's' : ''} still to check.`; }
-  else { el.style.color = 'var(--ok)'; el.innerHTML = `<b>PASS</b>${c.kind === 'Periodic' && c.lim == null ? ' — no wear limit entered, so the chain measurement is recorded but not checked' : ''}.`; }
+  const why = [c.fails ? c.fails + ' item' + (c.fails > 1 ? 's' : '') + ' failed' : '', c.gapBad ? `brake gap ${c.gap} mm is outside ${BRAKE_MIN}–${BRAKE_MAX} mm` : '', c.worn ? `chain worn past limit (${c.g} > ${c.lim} mm)` : '', c.forced ? 'marked as fail' : ''].filter(Boolean);
+  if (why.length) { el.style.color = 'var(--bad)'; el.innerHTML = `<b>FAIL</b> — ${h(why.join(', '))}. The motor will be tagged <b>Out of service</b>.`; }
+  else if (c.missing) { el.style.color = ''; el.textContent = `${c.missing} item${c.missing > 1 ? 's' : ''} still to fill in.`; }
+  else { el.style.color = 'var(--ok)'; el.innerHTML = '<b>PASS</b>'; }
+  // a failed item needs a comment: open its note box
+  if (c.kind === 'Periodic') CHECKLIST.forEach((it, i) => { const n = f.querySelector(`[name=n${i}]`); if (!n) return; const isFail = !it.yesno && c.fd.get('c' + i) === 'fail'; n.required = isFail; if (isFail || n.value) n.hidden = false; });
 }
 async function submitInspect(f) {
   const a = assetById(inspAid), c = inspCheck(f), fd = c.fd;
-  if (c.missing) throw new Error(`Answer every item (${c.missing} left).`);
+  if (c.missing) throw new Error(`Fill in every item (${c.missing} left).`);
   const notes = fd.get('notes').trim(), who = fd.get('inspector_name').trim();
-  if (!notes || !who) throw new Error('Fill in the inspector and notes.');
-  const labels = c.kind === 'Load test' ? { lt_held: 'Held the test load', lt_brake: 'Brake & limits under load', lt_noise: 'No abnormal noise/heat' } : Object.fromEntries(CHECKLIST.map((t, i) => ['c' + i, t]));
-  const checklist = Object.fromEntries(c.names.map(n => [labels[n], fd.get(n)]));
-  const result = c.fails || c.worn ? 'Fail' : 'Pass';
+  if (!who) throw new Error('Who did the inspection?');
+  if (c.kind === 'Load test' && !notes) throw new Error('Add notes for the load test.');
+  if (c.forced && !c.fails && !c.gapBad && !c.worn && !notes) throw new Error('Say why it fails in General comments.');
+  const flagged = c.kind === 'Periodic' && !!fd.get('flagged');
+  if (flagged && !fd.get('flag_note').trim()) throw new Error('Add a comment for the flag.');
+  let checklist, item_notes = {};
+  if (c.kind === 'Load test') checklist = { 'Held the test load': fd.get('lt_held'), 'Brake & limits under load': fd.get('lt_brake'), 'No abnormal noise/heat': fd.get('lt_noise') };
+  else {
+    checklist = {};
+    CHECKLIST.forEach((it, i) => { checklist[it.label] = fd.get('c' + i); const n = (fd.get('n' + i) || '').trim(); if (n) item_notes[it.label] = n; });
+    const missingNote = CHECKLIST.find((it, i) => !it.yesno && fd.get('c' + i) === 'fail' && !(fd.get('n' + i) || '').trim());
+    if (missingNote) throw new Error(`Add a comment for "${missingNote.label}".`);
+    if (flagged) item_notes.__flag = fd.get('flag_note').trim();
+  }
+  const result = c.fails || c.worn || c.gapBad || c.forced ? 'Fail' : 'Pass';
   const photos = [];
   for (const file of [...f.querySelector('[name=photos]').files]) { const blob = await compressImage(file); photos.push(await api.upload('photos', blob, (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg')); }
-  const row = { asset_id: a.id, kind: c.kind, inspected_on: fd.get('inspected_on'), checklist, result, notes, photos, inspector_name: who, created_by: S.user.id,
-    gauge_mm: c.kind === 'Periodic' ? c.g : null, gauge_max_mm: c.kind === 'Periodic' ? c.lim : null,
+  const P = c.kind === 'Periodic', chainLen = P ? numOrNull(fd.get('chain_length_m')) : null;
+  const row = { asset_id: a.id, kind: c.kind, inspected_on: fd.get('inspected_on'), checklist, item_notes, result, notes, photos, inspector_name: who, created_by: S.user.id,
+    gauge_mm: P ? c.g : null, gauge_max_mm: P ? c.lim : null, brake_gap_mm: P ? c.gap : null, roadcase: P ? (fd.get('roadcase').trim() || null) : null,
+    flagged, refer_to: flagged ? (fd.get('refer_to').trim() || null) : null, service_label: P ? fd.get('service_label') === 'pass' : null, chain_length_m: chainLen,
     test_load_kg: c.kind === 'Load test' ? numOrNull(fd.get('test_load_kg')) : null, held: c.kind === 'Load test' ? fd.get('lt_held') === 'pass' : null };
   const ins = await api.insert('inspections', row); S.inspections.unshift(ins);
-  if (c.kind === 'Periodic' && c.lim != null && !hasH(a.gauge_max_mm)) {               // remember the wear limit
-    const targets = fd.get('save_limit') ? S.assets.filter(x => norm(x.make) === norm(a.make) && norm(x.model) === norm(a.model) && !hasH(x.gauge_max_mm)) : [a];
+  const apatch = {};
+  if (P && c.lim != null && !hasH(a.gauge_max_mm)) {               // remember the wear limit
+    const targets = fd.get('save_limit') ? S.assets.filter(x => x.id !== a.id && norm(x.make) === norm(a.make) && norm(x.model) === norm(a.model) && !hasH(x.gauge_max_mm)) : [];
     for (const x of targets) Object.assign(x, await api.update('assets', x.id, { gauge_max_mm: c.lim, updated_by: S.user.id }));
+    apatch.gauge_max_mm = c.lim;
   }
-  const failed = Object.entries(checklist).filter(([, v]) => v === 'fail').map(([k]) => k);
-  const details = [failed.length ? 'Failed: ' + failed.join('; ') : '', c.worn ? `Chain worn: ${c.g} mm over ${a.gauge_links || 11} links (limit ${c.lim} mm)` : c.g != null ? `Chain: ${c.g} mm${c.lim != null ? ' (limit ' + c.lim + ')' : ''}` : '',
-    row.test_load_kg ? `Test load ${F_NUM.format(row.test_load_kg)} kg` : '', notes].filter(Boolean).join('\n');
+  if (chainLen != null && chainLen !== Number(a.chain_length_m)) apatch.chain_length_m = chainLen;
+  const failed = Object.entries(checklist).filter(([k, v]) => v === 'fail' && !CHECKLIST.find(x => x.label === k)?.yesno).map(([k]) => k + (item_notes[k] ? ` (${item_notes[k]})` : ''));
+  const noBag = P && checklist['Weather bag'] === 'fail';
+  const details = [failed.length ? 'Failed: ' + failed.join('; ') : '', c.gapBad ? `Brake gap ${c.gap} mm — outside ${BRAKE_MIN}–${BRAKE_MAX} mm` : P ? `Brake gap ${c.gap} mm` : '',
+    c.worn ? `Chain worn: ${c.g} mm over ${a.gauge_links || 11} links (limit ${c.lim} mm)` : c.g != null ? `Chain: ${c.g} mm${c.lim != null ? ' (limit ' + c.lim + ')' : ''}` : '',
+    row.roadcase ? 'Roadcase: ' + row.roadcase : '', noBag ? 'No weather bag in case' : '', P && !row.service_label ? 'Service label NOT applied' : '',
+    flagged ? `⚑ Flagged${row.refer_to ? ' → ' + row.refer_to : ''}: ${item_notes.__flag}` : '', row.test_load_kg ? `Test load ${F_NUM.format(row.test_load_kg)} kg` : '', notes].filter(Boolean).join('\n');
   let st = a.status;
-  if (result === 'Fail' && a.status !== 'Out of service') { st = 'Out of service'; Object.assign(a, await api.update('assets', a.id, { ...statusPatch(a, st), updated_at: new Date().toISOString(), updated_by: S.user.id })); }
-  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: 'Inspection', title: `${KIND_LABEL[c.kind]}: ${result.toUpperCase()}`, details, inspection_id: ins.id, location: a.location || '', photos, status_after: result === 'Fail' ? st : null, created_by: S.user.id }));
+  if (result === 'Fail' && a.status !== 'Out of service') { st = 'Out of service'; Object.assign(apatch, statusPatch(a, st)); }
+  if (Object.keys(apatch).length) Object.assign(a, await api.update('assets', a.id, { ...apatch, updated_at: new Date().toISOString(), updated_by: S.user.id }));
+  S.logs.unshift(await api.insert('logs', { asset_id: a.id, kind: 'Inspection', title: `${KIND_LABEL[c.kind]}: ${result.toUpperCase()}${flagged ? ' ⚑' : ''}`, details, inspection_id: ins.id, location: a.location || '', photos, status_after: result === 'Fail' ? st : null, created_by: S.user.id }));
   if (result === 'Fail') { beep(false); toast(`${a.tag} FAILED — tagged out of service`, 'bad'); }
-  else { beep(true); toast(`${a.tag} passed${a.status !== 'OK' ? ' — status is still ' + a.status + '; log a repair to return it to service' : ''}`); }
+  else { beep(true); toast(`${a.tag} passed${flagged ? ' — flagged for follow-up' : ''}${a.status !== 'OK' ? ' — status is still ' + a.status + '; log a repair to return it to service' : ''}`); }
   closeModal(); render();
 }
 
@@ -1874,8 +1949,12 @@ function exportCSV(what, opts = {}) {
   if (what === 'register') downloadText(`inspection-register-${stamp()}.csv`, toCSV([...S.inspections].filter(i => assetById(i.asset_id)).sort((x, y) => String(y.inspected_on).localeCompare(String(x.inspected_on))), [
     ['Date', i => i.inspected_on], ['Motor', i => tagOf(i.asset_id)], ['Serial', i => assetById(i.asset_id)?.serial || ''], ['Model', i => assetById(i.asset_id)?.model || ''], ['WLL kg', i => assetById(i.asset_id)?.wll_kg ?? ''],
     ['Type', i => KIND_LABEL[i.kind]], ['Result', i => i.result], ['Inspector', i => i.inspector_name || nameOf(i.created_by)],
-    ['Failed items', i => Object.entries(i.checklist || {}).filter(([, v]) => v === 'fail').map(([k]) => k).join('; ')], ['Chain gauge mm', i => i.gauge_mm ?? ''], ['Wear limit mm', i => i.gauge_max_mm ?? ''],
-    ['Test load kg', i => i.test_load_kg ?? ''], ['Notes', i => i.notes || '']]));
+    ['Failed items', i => Object.entries(i.checklist || {}).filter(([k, v]) => v === 'fail' && k !== 'Weather bag').map(([k]) => k).join('; ')], ['Chain gauge mm', i => i.gauge_mm ?? ''], ['Wear limit mm', i => i.gauge_max_mm ?? ''],
+    ['Brake gap mm', i => i.brake_gap_mm ?? ''], ['Roadcase', i => i.roadcase || ''], ['Weather bag', i => i.checklist?.['Weather bag'] === 'pass' ? 'Yes' : i.checklist?.['Weather bag'] === 'fail' ? 'No' : ''],
+    ['Service label applied', i => i.service_label == null ? '' : i.service_label ? 'Yes' : 'No'], ['Chain length m', i => i.chain_length_m ?? ''],
+    ['Flagged', i => i.flagged ? (i.flag_resolved_at ? 'Resolved' : 'OPEN') : ''], ['Refer to', i => i.refer_to || ''], ['Flag comment', i => i.item_notes?.__flag || ''],
+    ['Item comments', i => Object.entries(i.item_notes || {}).filter(([k]) => k !== '__flag').map(([k, v]) => k + ': ' + v).join('; ')],
+    ['Test load kg', i => i.test_load_kg ?? ''], ['General comments', i => i.notes || '']]));
   if (what === 'repairs') downloadText(`repairs-${stamp()}.csv`, toCSV([...S.repair_jobs].filter(j => assetById(j.asset_id)).sort((x, y) => String(y.sent_at).localeCompare(String(x.sent_at))), [
     ['Light', j => tagOf(j.asset_id)], ['Model', j => assetById(j.asset_id)?.model || ''], ['Sent to', j => j.repairer], ['Job no.', j => j.job_no || ''], ['Fault', j => j.fault || ''],
     ['Sent', j => j.sent_at], ['Expected back', j => j.expected_back || ''], ['Back', j => j.returned_at || ''], ['Days away', j => j.returned_at ? Math.round((new Date(j.returned_at) - new Date(j.sent_at)) / DAY) : daysAway(j)],
@@ -1974,6 +2053,8 @@ const ACT = {
   'restock': d => restockModal(S.parts.find(x => x.id === d.id)),
   'part-return': d => returnPart(d.id),
   'inspect': d => inspModal(d.id, d.kind || 'Periodic'),
+  'ci-note': d => { const n = $(`#modal [name=n${d.i}]`); if (n) { n.hidden = false; n.focus(); } },
+  'flag-resolve': d => resolveFlag(d.id),
   'insp-tab': d => { inspTab = d.tab; render(); },
   'print-register': printRegister,
   'repair-send': d => sendModal(d.id),
@@ -2049,6 +2130,7 @@ document.addEventListener('submit', async e => {
 });
 let searchTimer = 0;
 document.addEventListener('input', e => {
+  if (e.target.closest && e.target.closest('form[data-insp]') && e.target.type === 'number') { inspResult(); return; }
   const k = e.target.dataset.filter; if (!k) return;
   if (k === 'partQ') { S.partQ = e.target.value; $('#part-list').innerHTML = partTable(); return; }
   if (k === 'manualQ') { S.manualQ = e.target.value; const keep = e.target.selectionStart; render(); const i = $('[data-filter=manualQ]'); i.focus(); i.setSelectionRange(keep, keep); return; }
@@ -2058,6 +2140,7 @@ document.addEventListener('change', async e => {
   const t = e.target;
   if (t.dataset.photoScan !== undefined) return scanPhoto(t);
   if (t.dataset.inspKind !== undefined) { drawInspBody(t.value); return; }
+  if (t.dataset.flag !== undefined) { $('#flag-fields').hidden = !t.checked; $('[name=flag_note]').required = t.checked; if (t.checked) $('[name=flag_note]').focus(); }
   if (t.closest && t.closest('form[data-insp]')) inspResult();
   if (t.dataset.costModel !== undefined) { costModel = t.value; $('#cost-list').innerHTML = costTable(); return; }
   if (t.dataset.orderOn !== undefined) { order.rows[+t.dataset.orderOn].on = t.checked; drawOrder(); return; }

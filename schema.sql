@@ -251,3 +251,27 @@ insert into storage.buckets (id, name, public) values ('photos','photos',false),
 create policy "files: read"   on storage.objects for select to authenticated using (bucket_id in ('photos','manuals') and (select public.is_member()));
 create policy "files: upload" on storage.objects for insert to authenticated with check (bucket_id in ('photos','manuals') and (select public.is_member()));
 create policy "files: delete" on storage.objects for delete to authenticated using (bucket_id in ('photos','manuals') and (select public.is_admin()));
+
+-- ---------- Motor record form fields (added) ----------
+alter table public.inspections add column if not exists item_notes jsonb not null default '{}'::jsonb;
+alter table public.inspections add column if not exists brake_gap_mm numeric;
+alter table public.inspections add column if not exists roadcase text;
+alter table public.inspections add column if not exists flagged boolean not null default false;
+alter table public.inspections add column if not exists refer_to text;
+alter table public.inspections add column if not exists flag_resolved_at timestamptz;
+alter table public.inspections add column if not exists service_label boolean;
+alter table public.inspections add column if not exists chain_length_m numeric;
+create policy "inspections: resolve flag" on public.inspections for update to authenticated
+  using ((select public.is_member()) and flagged) with check ((select public.is_member()) and flagged);
+create or replace function public.guard_inspection_edit() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is not null and not public.is_admin() then
+    if (to_jsonb(new) - 'flag_resolved_at') is distinct from (to_jsonb(old) - 'flag_resolved_at') then
+      raise exception 'Inspections can''t be changed once saved — ask an admin';
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger inspections_guard before update on public.inspections for each row execute function public.guard_inspection_edit();
+revoke execute on function public.guard_inspection_edit() from public, anon, authenticated;
